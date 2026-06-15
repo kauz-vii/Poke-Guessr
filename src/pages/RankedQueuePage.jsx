@@ -112,8 +112,11 @@ export default function RankedQueuePage() {
           if (opponent) {
             setIsMatching(false);
             // I AM THE HOST! Create room
+            const roomCode = 'RANKED-' + Math.random().toString(36).substring(2, 8).toUpperCase();
             const { data: room } = await supabase.from('rooms').insert({
-              status: 'in_game'
+              status: 'in_game',
+              room_code: roomCode,
+              host_id: user.id,
             }).select('id').single();
             
             // Insert myself as host
