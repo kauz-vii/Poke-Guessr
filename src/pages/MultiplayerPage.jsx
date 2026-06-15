@@ -57,7 +57,7 @@ export default function MultiplayerPage() {
     try {
       const code = await uniqueCode();
 
-      const { data: room, error: roomErr } = await supabase
+      let { data: room, error: roomErr } = await supabase
         .from('rooms')
         .insert({ room_code: code, host_id: user.id, status: 'waiting', max_players: maxPlayers })
         .select()
