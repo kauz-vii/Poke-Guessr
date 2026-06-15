@@ -55,18 +55,20 @@ export default function GameStartingPage() {
 
           // 3. Init game_sessions
           const gensArray = Array.from(selectedGens.values());
-          const { error: sessionErr } = await supabase
-            .from('game_sessions')
-            .upsert({
-              room_id: roomId,
-              current_round: 1,
-              timer: 30,
-              game_state: 'waiting',
-              difficulty: difficulty,
-              selected_gens: gensArray,
-            }, { onConflict: 'room_id' });
-
-          if (sessionErr) throw sessionErr;
+          const { data: existingSession } = await supabase.from('game_sessions').select('id').eq('room_id', roomId).maybeSingle();
+          if (!existingSession) {
+            const { error: sessionErr } = await supabase
+              .from('game_sessions')
+              .insert({
+                room_id: roomId,
+                current_round: 1,
+                timer: 30,
+                game_state: 'waiting',
+                difficulty: difficulty,
+                selected_gens: gensArray,
+              });
+            if (sessionErr) throw sessionErr;
+          }
 
           // 4. Redirect
           if (active) navigate(`/multiplayer/game/${roomId}`);

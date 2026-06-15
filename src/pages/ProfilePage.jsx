@@ -36,10 +36,12 @@ function StatCard({ icon, label, value, highlight }) {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { profile, logout } = useAuth();
+  const { profile, logout, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [recentMatches, setRecentMatches] = useState([]);
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
 
   useEffect(() => {
     if (profile?.id) {
@@ -71,6 +73,19 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleSaveUsername() {
+    if (!newUsername.trim()) return;
+    try {
+      const { error } = await supabase.from('profiles').update({ username: newUsername }).eq('id', profile.id);
+      if (error) throw error;
+      await refreshProfile();
+      setIsEditingUsername(false);
+      showToast('Username updated successfully!', 'success');
+    } catch (e) {
+      showToast('Failed to update username.', 'error');
+    }
+  }
+
   if (!profile) {
     return (
       <div className="page-center">
@@ -98,7 +113,25 @@ export default function ProfilePage() {
           <Avatar username={profile.username} />
           <div className="profile-info" style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h1 className="profile-username" style={{ margin: 0 }}>{profile.username}</h1>
+              {isEditingUsername ? (
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input 
+                    type="text" 
+                    value={newUsername} 
+                    onChange={e => setNewUsername(e.target.value)}
+                    className="game-input"
+                    style={{ padding: '4px 8px', width: '150px' }}
+                    autoFocus
+                  />
+                  <button onClick={handleSaveUsername} className="btn btn-primary" style={{ padding: '4px 12px', minWidth: 'auto' }}>Save</button>
+                  <button onClick={() => setIsEditingUsername(false)} className="btn btn-ghost" style={{ padding: '4px 12px', minWidth: 'auto' }}>Cancel</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h1 className="profile-username" style={{ margin: 0 }}>{profile.username}</h1>
+                  <button onClick={() => { setNewUsername(profile.username); setIsEditingUsername(true); }} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.9rem', minWidth: 'auto' }}>✏️</button>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ background: 'var(--color-pokemon-yellow)', color: '#1a1a2e', padding: '4px 12px', borderRadius: '20px', fontWeight: 900, fontFamily: 'var(--font-heading)' }}>
                   LVL {level}

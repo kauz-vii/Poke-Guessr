@@ -14,8 +14,6 @@ import { useAuth }  from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { supabase }  from '../supabase';
 
-const MAX_PLAYERS = 10;
-
 export default function LobbyPage() {
   const { roomId }         = useParams();
   const navigate           = useNavigate();
@@ -221,7 +219,7 @@ export default function LobbyPage() {
           <span className="lobby-count-label">Players</span>
           <span className="lobby-count-value">
             {players.length}
-            <span className="lobby-count-max"> / {MAX_PLAYERS}</span>
+            <span className="lobby-count-max"> / {room?.max_players || 10}</span>
           </span>
         </div>
 

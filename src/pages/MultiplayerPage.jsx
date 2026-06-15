@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth }  from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { supabase }  from '../supabase';
+import { useGameSettings, GEN_RANGES, DIFFICULTIES } from '../contexts/GameSettingsContext';
 
 // ── Room code helpers ──────────────────────────────────────────────────────
 
@@ -41,9 +42,16 @@ export default function MultiplayerPage() {
   const [creating,   setCreating]    = useState(false);
   const [joining,    setJoining]     = useState(false);
   const [error,      setError]       = useState('');
+  const [showConfig, setShowConfig]  = useState(false);
+
+  // Settings state
+  const { selectedGens, toggleGen, difficulty, setDifficulty } = useGameSettings();
+  const [totalRounds, setTotalRounds] = useState(10);
+  const [maxPlayers, setMaxPlayers] = useState(10);
 
   // ── Create Party ────────────────────────────────────────────────────────
-  async function handleCreate() {
+  async function handleCreate(e) {
+    if (e) e.preventDefault();
     setError('');
     setCreating(true);
     try {
@@ -51,10 +59,38 @@ export default function MultiplayerPage() {
 
       const { data: room, error: roomErr } = await supabase
         .from('rooms')
-        .insert({ room_code: code, host_id: user.id, status: 'waiting' })
+        .insert({ room_code: code, host_id: user.id, status: 'waiting', max_players: maxPlayers })
         .select()
         .single();
-      if (roomErr) throw roomErr;
+      if (roomErr) {
+         // Fallback if max_players column doesn't exist yet
+         if (roomErr.message.includes('max_players')) {
+            const { data: fallbackRoom, error: fallbackErr } = await supabase
+              .from('rooms')
+              .insert({ room_code: code, host_id: user.id, status: 'waiting' })
+              .select()
+              .single();
+            if (fallbackErr) throw fallbackErr;
+            room = fallbackRoom;
+         } else {
+            throw roomErr;
+         }
+      }
+
+      // Pre-create game session with configuration
+      const gensArray = Array.from(selectedGens.values());
+      const { error: sessionErr } = await supabase
+        .from('game_sessions')
+        .insert({
+          room_id: room.id,
+          current_round: 1,
+          total_rounds: totalRounds,
+          timer: 30,
+          game_state: 'waiting',
+          difficulty: difficulty,
+          selected_gens: gensArray,
+        });
+      if (sessionErr) throw sessionErr;
 
       const { error: playerErr } = await supabase
         .from('room_players')
@@ -101,7 +137,7 @@ export default function MultiplayerPage() {
         .from('room_players')
         .select('id', { count: 'exact', head: true })
         .eq('room_id', room.id);
-      if (count >= 10) throw new Error('Room is full (10/10).');
+      if (count >= (room.max_players || 10)) throw new Error(`Room is full (${room.max_players || 10}/${room.max_players || 10}).`);
 
       // Check if already in room
       const { data: existing } = await supabase
@@ -163,18 +199,69 @@ export default function MultiplayerPage() {
         {error && <div className="mp-error" role="alert">⚠️ {error}</div>}
 
         {/* Create */}
-        <button
-          className="mp-btn mp-btn-create"
-          onClick={handleCreate}
-          disabled={creating || joining}
-          id="mp-create-btn"
-        >
-          {creating ? (
-            <><span className="auth-spinner" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#000' }} /> Creating…</>
-          ) : (
-            <><span>✨</span> Create Party</>
-          )}
-        </button>
+        {!showConfig ? (
+          <button
+            className="mp-btn mp-btn-create"
+            onClick={() => setShowConfig(true)}
+            disabled={creating || joining}
+            id="mp-create-btn"
+          >
+            <span>✨</span> Create Party
+          </button>
+        ) : (
+          <form className="mp-config-form" onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-pokemon-yellow)' }}>Party Settings</h3>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <label>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Rounds</div>
+                <select value={totalRounds} onChange={e => setTotalRounds(Number(e.target.value))} className="game-input" style={{ padding: '4px', width: '80px' }}>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={20}>20</option>
+                </select>
+              </label>
+              
+              <label>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Max Players</div>
+                <select value={maxPlayers} onChange={e => setMaxPlayers(Number(e.target.value))} className="game-input" style={{ padding: '4px', width: '80px' }}>
+                  <option value={2}>2</option>
+                  <option value={4}>4</option>
+                  <option value={8}>8</option>
+                  <option value={10}>10</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Difficulty</div>
+              <select value={difficulty} onChange={e => setDifficulty(e.target.value)} className="game-input" style={{ padding: '4px', width: '100%' }}>
+                {DIFFICULTIES.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+              </select>
+            </label>
+
+            <div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Generations ({selectedGens.size} selected)</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {GEN_RANGES.map(g => (
+                  <button type="button" key={g.gen} onClick={() => toggleGen(g.gen)} disabled={selectedGens.has(g.gen) && selectedGens.size === 1} style={{ padding: '2px 8px', fontSize: '0.7rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: selectedGens.has(g.gen) ? 'var(--color-pokemon-blue)' : 'transparent', color: 'white', cursor: 'pointer' }}>
+                    {g.gen}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="mp-btn mp-btn-create"
+              disabled={creating || joining}
+              style={{ marginTop: '8px' }}
+            >
+              {creating ? 'Creating…' : 'Start Party'}
+            </button>
+          </form>
+        )}
 
         {/* Divider */}
         <div className="mp-divider">

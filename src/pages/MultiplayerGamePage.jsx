@@ -22,7 +22,6 @@ import GuessInput      from '../components/GuessInput';
 import FeedbackMessage from '../components/FeedbackMessage';
 import Confetti        from '../components/Confetti';
 
-const TOTAL_ROUNDS = 10;
 const ROUND_TIME = 30;
 
 export default function MultiplayerGamePage() {
@@ -235,7 +234,8 @@ export default function MultiplayerGamePage() {
       // If reveal, wait 3s then next round
       if (session.game_state === 'reveal') {
         setTimeout(async () => {
-          if (session.current_round >= TOTAL_ROUNDS) {
+          const totalRounds = session.total_rounds || 10;
+          if (session.current_round >= totalRounds) {
             await supabase.from('game_sessions').update({ game_state: 'finished' }).eq('room_id', roomId);
           } else {
             const gensSet = new Set(session.selected_gens || [1,2,3,4,5,6,7,8,9]);
@@ -324,7 +324,8 @@ export default function MultiplayerGamePage() {
             // Actual score: 1 if win, 0 if loss, 0.5 if tie
             let actualScore = 0.5;
             // If the game ended before all rounds finished, it means the opponent forfeited
-            if (session.current_round < TOTAL_ROUNDS) {
+            const totalRounds = session?.total_rounds || 10;
+            if (session.current_round < totalRounds) {
               actualScore = 1;
             } else if (myScore.score > opponentScore.score) {
               actualScore = 1;
@@ -431,7 +432,7 @@ export default function MultiplayerGamePage() {
           </div>
           <div className="header-score">
             <span className="header-score-label">Round</span>
-            <span className="header-score-value">{currentRound} / {TOTAL_ROUNDS}</span>
+            <span className="header-score-value">{currentRound} / {session?.total_rounds || 10}</span>
           </div>
         </div>
         <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-pokemon-yellow)' }}>

@@ -20,6 +20,9 @@ export default function MainMenu() {
   const navigate = useNavigate();
   const { user, profile, logout } = useAuth();
   const { showToast } = useToast();
+  
+  const level = profile ? Math.floor(Math.sqrt((profile.xp || 0) / 100)) + 1 : 1;
+  const isRankedLocked = level < 10;
 
   async function handleLogout() {
     try {
@@ -99,11 +102,17 @@ export default function MainMenu() {
               <button
                 id="menu-ranked-btn"
                 className="menu-btn menu-btn-start"
-                onClick={() => navigate('/ranked')}
-                style={{ background: '#9c27b0' }}
+                onClick={() => {
+                  if (isRankedLocked) {
+                    showToast('Ranked Match unlocks at Level 10!', 'warning');
+                  } else {
+                    navigate('/ranked');
+                  }
+                }}
+                style={{ background: isRankedLocked ? '#555' : '#9c27b0', opacity: isRankedLocked ? 0.7 : 1, cursor: isRankedLocked ? 'not-allowed' : 'pointer' }}
               >
-                <span className="menu-btn-icon">⚔️</span>
-                <span className="menu-btn-label">Ranked Match</span>
+                <span className="menu-btn-icon">{isRankedLocked ? '🔒' : '⚔️'}</span>
+                <span className="menu-btn-label">Ranked Match {isRankedLocked && <span style={{fontSize: '0.7rem', display: 'block'}}>Unlocks at Lvl 10</span>}</span>
               </button>
 
               <button
