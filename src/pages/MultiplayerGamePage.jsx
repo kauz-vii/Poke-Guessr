@@ -44,6 +44,7 @@ export default function MultiplayerGamePage() {
   const [hasGuessedCorrectly, setHasGuessedCorrectly] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState('');
+  const [activePlayerIds, setActivePlayerIds] = useState([]);
   
   const hostTimerRef = useRef(null);
 
@@ -100,10 +101,15 @@ export default function MultiplayerGamePage() {
     return () => { active = false; };
   }, [roomId, user.id]);
 
-  // ── 2. Realtime Subscriptions ────────────────────────────────────────────
+  // ── 2. Realtime Subscriptions & Presence ─────────────────────────────────
   useEffect(() => {
     const channel = supabase
-      .channel(`game:${roomId}`)
+      .channel(`game:${roomId}`, { config: { presence: { key: user.id } } })
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const ids = Object.keys(state);
+        setActivePlayerIds(ids);
+      })
       // Listen to session changes (timer, state, pokemon)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_sessions', filter: `room_id=eq.${roomId}` },
         (payload) => setSession(payload.new)
@@ -124,10 +130,35 @@ export default function MultiplayerGamePage() {
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
         () => navigate('/multiplayer')
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [roomId, navigate]);
+  }, [roomId, navigate, user.id]);
+
+  // ── 2b. Host Migration & Forfeit Detection ───────────────────────────────
+  useEffect(() => {
+    if (activePlayerIds.length === 0 || !session || session.game_state === 'finished') return;
+    
+    // Check for forfeit: if original player count was >= 2, and only 1 is left
+    if (activePlayerIds.length === 1 && scores.length >= 2) {
+      if (activePlayerIds[0] === user.id) {
+        // I'm the last one standing, I win!
+        supabase.from('game_sessions').update({ game_state: 'finished' }).eq('room_id', roomId);
+      }
+      return;
+    }
+
+    // Host Migration: The player with the alphabetically first ID becomes the host
+    const designatedHostId = [...activePlayerIds].sort()[0];
+    if (designatedHostId === user.id && !isHost) {
+      setIsHost(true);
+      supabase.from('room_players').update({ is_host: true }).eq('room_id', roomId).eq('user_id', user.id);
+    }
+  }, [activePlayerIds, scores.length, session, user.id, isHost, roomId]);
 
   // ── 3. Fetch Pokémon when ID changes ─────────────────────────────────────
   useEffect(() => {
@@ -183,14 +214,14 @@ export default function MultiplayerGamePage() {
             // Update DB timer (Realtime will broadcast)
             await supabase.from('game_sessions').update({ timer: t }).eq('room_id', roomId);
             
-            // Check early end condition (everyone guessed correctly)
-            const { count: totalPlayers } = await supabase.from('room_players').select('id', { count: 'exact', head: true }).eq('room_id', roomId);
+            // Check early end condition (everyone ACTIVE guessed correctly)
+            const activeCount = activePlayerIds.length > 0 ? activePlayerIds.length : 1; // fallback to 1 to prevent divide-by-zero logic
             const { count: correctGuesses } = await supabase.from('round_results').select('id', { count: 'exact', head: true })
               .eq('room_id', roomId)
               .eq('round_number', session.current_round)
               .eq('guessed_correctly', true);
             
-            if (totalPlayers > 0 && correctGuesses === totalPlayers) {
+            if (correctGuesses >= activeCount) {
               clearInterval(hostTimerRef.current);
               await supabase.from('game_sessions').update({
                 game_state: 'reveal',
@@ -223,7 +254,7 @@ export default function MultiplayerGamePage() {
     runHostLoop();
 
     return () => clearInterval(hostTimerRef.current);
-  }, [isHost, session?.game_state, session?.current_round]); // re-run only on state/round changes
+  }, [isHost, session?.game_state, session?.current_round, activePlayerIds.length]); // added activePlayerIds.length dependency for dynamic early end
 
   // ── 5. Client: Reset local state on new round ────────────────────────────
   useEffect(() => {
@@ -292,8 +323,14 @@ export default function MultiplayerGamePage() {
           if (myProfile && oppProfile) {
             // Actual score: 1 if win, 0 if loss, 0.5 if tie
             let actualScore = 0.5;
-            if (myScore.score > opponentScore.score) actualScore = 1;
-            else if (myScore.score < opponentScore.score) actualScore = 0;
+            // If the game ended before all rounds finished, it means the opponent forfeited
+            if (session.current_round < TOTAL_ROUNDS) {
+              actualScore = 1;
+            } else if (myScore.score > opponentScore.score) {
+              actualScore = 1;
+            } else if (myScore.score < opponentScore.score) {
+              actualScore = 0;
+            }
 
             const newRating = calculateElo(myProfile.rating, oppProfile.rating, actualScore);
             const diff = newRating - myProfile.rating;

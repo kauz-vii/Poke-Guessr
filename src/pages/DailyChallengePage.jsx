@@ -24,7 +24,7 @@ import LoadingState    from '../components/LoadingState';
 import ErrorState      from '../components/ErrorState';
 import Confetti        from '../components/Confetti';
 
-const TOTAL_ROUNDS = 10;
+const TOTAL_ROUNDS = 1;
 const ROUND_TIME = 30;
 
 export default function DailyChallengePage() {

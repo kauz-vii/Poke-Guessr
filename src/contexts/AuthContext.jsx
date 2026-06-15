@@ -71,7 +71,7 @@ export function AuthProvider({ children }) {
   async function loginWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: 'https://poke-guessr-kaushik07oct2004-1414s-projects.vercel.app/' },
     });
     if (error) throw error;
     return data;

@@ -23,16 +23,14 @@ export default function RankedQueuePage() {
     let active = true;
 
     async function joinQueue() {
-      // Clear any stale rows
-      await supabase.from('matchmaking_queue').delete().eq('user_id', user.id);
-
-      // Insert new row
+      // Insert or update row (upsert handles the unique constraint safely)
       const { data, error } = await supabase
         .from('matchmaking_queue')
-        .insert({
+        .upsert({
           user_id: user.id,
-          rating: profile.rating || 1200
-        })
+          rating: profile.rating || 1200,
+          matched_room_id: null // Reset room ID on re-join
+        }, { onConflict: 'user_id' })
         .select('id')
         .single();
         
