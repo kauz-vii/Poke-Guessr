@@ -113,7 +113,6 @@ export function AuthProvider({ children }) {
   async function saveGameSession(params) {
     if (!user) return;
     
-    // params = { sessionScore, sessionCorrect, gameMode, placement, roundsWon, duration, roomId }
     const { 
       sessionScore = 0, 
       sessionCorrect = 0, 
@@ -125,83 +124,31 @@ export function AuthProvider({ children }) {
       isDaily = false
     } = params;
 
-    // 1. Calculate XP
-    let xpEarned = sessionCorrect * 10;
-    if (placement === 1 || gameMode === 'casual') {
-      // Reward win XP for multiplayer wins, or a base completion bonus for casual
-      xpEarned += 100; 
-    }
-
-    // 2. Fetch current profile
-    const { data: fresh, error: fetchErr } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (fetchErr) throw fetchErr;
-
-    // Calculate new progression
-    const newXp = (fresh.xp ?? 0) + xpEarned;
-    const newLevel = Math.floor(Math.sqrt(newXp / 100)) + 1;
     const isWin = placement === 1;
 
-    let newStreak = fresh.daily_streak ?? 0;
-    let newLastDaily = fresh.last_daily_date;
-
-    if (isDaily) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (fresh.last_daily_date !== todayStr) {
-        // Did they play yesterday?
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        
-        if (fresh.last_daily_date === yesterdayStr) {
-          newStreak += 1;
-        } else {
-          newStreak = 1;
-        }
-        newLastDaily = todayStr;
-      }
-    }
-
-    const updates = {
-      games_played:  (fresh.games_played  ?? 0) + 1,
-      games_won:     (fresh.games_won ?? 0) + (isWin ? 1 : 0),
-      highest_score: Math.max(fresh.highest_score ?? 0, sessionScore),
-      total_score:   (fresh.total_score   ?? 0) + sessionScore,
-      total_correct: (fresh.total_correct ?? 0) + sessionCorrect,
-      xp: newXp,
-      level: newLevel,
-      daily_streak: newStreak,
-      last_daily_date: newLastDaily
-    };
-
-    // 3. Update Profile
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    if (error) throw error;
-
-    // 4. Insert Match History
-    await supabase.from('match_history').insert({
-      user_id: user.id,
-      room_id: roomId,
-      game_mode: gameMode,
-      placement: placement,
-      total_score: sessionScore,
-      rounds_won: roundsWon,
-      match_duration: duration
+    // Call the secure RPC to atomically update profile and insert match history
+    const { data: updatedProfile, error } = await supabase.rpc('atomic_save_session', {
+      p_session_score: sessionScore,
+      p_session_correct: sessionCorrect,
+      p_is_win: isWin,
+      p_is_daily: isDaily,
+      p_room_id: roomId,
+      p_game_mode: gameMode,
+      p_placement: placement,
+      p_rounds_won: roundsWon,
+      p_duration: duration
     });
 
-    // Update local profile state immediately
-    setProfile(prev => ({ ...prev, ...updates }));
+    if (error) {
+      console.error("Failed to save session:", error);
+      return;
+    }
 
-    // 5. Evaluate Achievements
-    const newUnlocks = await evaluateAchievements(user.id, { ...fresh, ...updates }, params);
+    // Update local profile state immediately
+    setProfile(updatedProfile);
+
+    // Evaluate Achievements based on the new atomic profile state
+    const newUnlocks = await evaluateAchievements(user.id, updatedProfile, params);
     
     // Dispatch a custom event so anywhere in the app can show a toast for unlocks
     if (newUnlocks && newUnlocks.length > 0) {

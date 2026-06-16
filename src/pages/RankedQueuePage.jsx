@@ -127,13 +127,22 @@ export default function RankedQueuePage() {
               is_host: true,
             });
 
-            // Update opponent queue row
-            await supabase.from('matchmaking_queue')
+            // Update opponent queue row safely and check if we won the race
+            const { data: updatedOpponent } = await supabase.from('matchmaking_queue')
               .update({ matched_room_id: room.id })
               .eq('id', opponent.id)
-              .is('matched_room_id', null); // Safety check
+              .is('matched_room_id', null) // Safety check
+              .select('id')
+              .maybeSingle();
               
-            // Cleanup my queue row
+            if (!updatedOpponent) {
+              // We lost the race condition. Another host matched them milliseconds ago.
+              setIsMatching(true); // resume
+              await supabase.from('rooms').delete().eq('id', room.id); // delete the orphaned room
+              return; // wait for next interval
+            }
+              
+            // We successfully claimed the opponent! Cleanup my queue row.
             await supabase.from('matchmaking_queue').delete().eq('user_id', user.id);
             
             // Go to game-starting

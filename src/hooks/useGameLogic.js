@@ -60,6 +60,7 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
   const countdownRef       = useRef(null);
   const isRoundOverRef     = useRef(false);
   const pokemonRef         = useRef(null);
+  const timeRemainingRef   = useRef(TOTAL_TIME);
   const difficultyRef      = useRef(difficulty);
   const selectedGensRef    = useRef(selectedGens);
 
@@ -126,18 +127,29 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
   // ─────────────────────────────────────────────────────────────────────────
   const startTimer = useCallback(() => {
     clearInterval(timerRef.current);
-    let time = TOTAL_TIME;
+    const startTime = Date.now();
+    let lastTime = TOTAL_TIME;
+    timeRemainingRef.current = TOTAL_TIME;
+    setTimeRemaining(TOTAL_TIME);
 
+    // Run interval more frequently, but only update state when absolute seconds change.
+    // This perfectly eliminates background tab timer throttling/drift.
     timerRef.current = setInterval(() => {
-      time--;
-      setTimeRemaining(time);
-      applyClueVisibility(time);
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const newTime = Math.max(0, TOTAL_TIME - elapsed);
 
-      if (time <= 0) {
-        clearInterval(timerRef.current);
-        endRound('timeout', 0);
+      if (newTime !== lastTime) {
+        lastTime = newTime;
+        timeRemainingRef.current = newTime;
+        setTimeRemaining(newTime);
+        applyClueVisibility(newTime);
+
+        if (newTime <= 0) {
+          clearInterval(timerRef.current);
+          endRound('timeout', 0);
+        }
       }
-    }, 1000);
+    }, 100);
   }, [endRound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -193,15 +205,15 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
 
   // ─────────────────────────────────────────────────────────────────────────
   const submitGuess = useCallback(() => {
-    if (!guess.trim() || isRoundOverRef.current || !pokemon) return;
-    if (isCorrectGuess(guess, pokemon.name)) {
-      endRound('correct', calculateScore(timeRemaining));
+    if (!guess.trim() || isRoundOverRef.current || !pokemonRef.current) return;
+    if (isCorrectGuess(guess, pokemonRef.current.name)) {
+      endRound('correct', calculateScore(timeRemainingRef.current));
     } else {
       setFeedback({ type: 'wrong-guess', pokemonName: '' });
       setTimeout(() => setFeedback(null), 1200);
       setGuess('');
     }
-  }, [guess, pokemon, timeRemaining, endRound]);
+  }, [guess, endRound]);
 
   const skipPokemon = useCallback(() => {
     if (isRoundOverRef.current) return;

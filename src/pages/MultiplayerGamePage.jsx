@@ -45,7 +45,8 @@ export default function MultiplayerGamePage() {
   const [error, setError] = useState('');
   const [activePlayerIds, setActivePlayerIds] = useState([]);
   
-  const hostTimerRef = useRef(null);
+  const hostTimerRef   = useRef(null);
+  const revealTimerRef = useRef(null);
 
   // Derived
   const timeRemaining = session?.timer ?? ROUND_TIME;
@@ -156,6 +157,8 @@ export default function MultiplayerGamePage() {
     if (designatedHostId === user.id && !isHost) {
       setIsHost(true);
       supabase.from('room_players').update({ is_host: true }).eq('room_id', roomId).eq('user_id', user.id);
+    } else if (designatedHostId !== user.id && isHost) {
+      setIsHost(false); // Fix: Relinquish host if someone else takes priority
     }
   }, [activePlayerIds, scores.length, session, user.id, isHost, roomId]);
 
@@ -233,7 +236,7 @@ export default function MultiplayerGamePage() {
 
       // If reveal, wait 3s then next round
       if (session.game_state === 'reveal') {
-        setTimeout(async () => {
+        revealTimerRef.current = setTimeout(async () => {
           const totalRounds = session.total_rounds || 10;
           if (session.current_round >= totalRounds) {
             await supabase.from('game_sessions').update({ game_state: 'finished' }).eq('room_id', roomId);
@@ -253,7 +256,10 @@ export default function MultiplayerGamePage() {
 
     runHostLoop();
 
-    return () => clearInterval(hostTimerRef.current);
+    return () => {
+      clearInterval(hostTimerRef.current);
+      clearTimeout(revealTimerRef.current);
+    };
   }, [isHost, session?.game_state, session?.current_round, activePlayerIds.length]); // added activePlayerIds.length dependency for dynamic early end
 
   // ── 5. Client: Reset local state on new round ────────────────────────────
@@ -275,31 +281,25 @@ export default function MultiplayerGamePage() {
       const points = Math.max(10, timeRemaining * 5); // Time * 5 for multiplayer
       setFeedback({ type: 'correct', pokemonName: '', pointsEarned: points });
 
-      // Insert result
-      await supabase.from('round_results').insert({
-        room_id: roomId,
-        round_number: currentRound,
-        user_id: user.id,
-        username: user.user_metadata?.username || 'Trainer',
-        guessed_correctly: true,
-        points_earned: points,
-        guess_time: ROUND_TIME - timeRemaining,
+      // Call secure RPC to handle score calculation atomically on the database!
+      const { error } = await supabase.rpc('record_round_result', {
+        p_room_id: roomId,
+        p_round_number: currentRound,
+        p_guessed_correctly: true,
+        p_points_earned: points,
+        p_guess_time: ROUND_TIME - timeRemaining,
+        p_username: user.user_metadata?.username || 'Trainer'
       });
-
-      // Update total score
-      const myScore = scores.find(s => s.user_id === user.id);
-      if (myScore) {
-        await supabase.from('player_scores').update({
-          score: myScore.score + points,
-          correct_guesses: myScore.correct_guesses + 1
-        }).eq('room_id', roomId).eq('user_id', user.id);
+      
+      if (error) {
+        console.error("Double submission or DB error:", error);
       }
     } else {
       setFeedback({ type: 'wrong-guess', pokemonName: '' });
       setTimeout(() => setFeedback(null), 1200);
       setGuess('');
     }
-  }, [guess, gameState, hasGuessedCorrectly, pokemon, timeRemaining, currentRound, roomId, user, scores]);
+  }, [guess, gameState, hasGuessedCorrectly, pokemon, timeRemaining, currentRound, roomId, user]);
 
 
   // ── 7. Client: Exit Match ────────────────────────────────────────────────

@@ -1,80 +1,123 @@
-# 🎮 Pokémon Guesser
+# 🎮 Poke-Guessr
 
 A full-featured, competitive multiplayer web application where players race to guess Pokémon from their silhouettes. Transform from a Beginner trainer into a Pokémon Champion through Ranked Matchmaking, Daily Challenges, and Party Matches!
 
-## ✨ Key Features
+Built with modern web technologies, real-time syncing, and a sleek, animated dark-mode UI.
 
-### 🏆 Competitive Multiplayer & Matchmaking
-- **Ranked Matchmaking:** Enter the peer-to-peer global matchmaking queue to face off against opponents of similar skill.
-- **Dynamic Elo System:** Win matches to earn rating points and climb the ranks from **Beginner** all the way up to the **Champion** tier.
-- **Party Matches:** Create private lobby rooms with custom 4-letter invite codes. Host up to 4 friends in real-time, synchronized 10-round matches.
+## 🚀 Live Demo
+Play the game here: [Poke-Guessr](https://poke-guessr-kaushik07oct2004-1414s-projects.vercel.app/)
 
-### 📅 Daily Challenge
-- **Global Seed:** Every day features a new, globally synchronized sequence of 10 Pokémon.
-- **One Attempt:** All players worldwide get exactly one attempt per day to complete the challenge.
-- **Daily Leaderboard:** Compete for the highest score and fastest completion time on the exclusive Daily Challenge leaderboard.
-
-### 👤 Progression & Social Systems
-- **RPG Progression:** Earn XP for every correct guess and match victory to level up your trainer profile.
-- **Achievements Engine:** Unlock 7 unique badges (e.g., *Speed Demon*, *Legendary Hunter*) by completing specific milestones.
-- **Friends Hub:** Search for other trainers, send friend requests, and build your friends list to easily coordinate matches.
-- **Global Leaderboards:** Compete across 4 distinct categories: Top Level, Best Game Score, Today's Daily, and Most Multiplayer Wins.
-
-### 🎯 Single Player Practice
-- **Generation Filters:** Filter the Pokédex to only include specific generations (e.g., Gen 1 & Gen 2 only).
-- **Custom Difficulties:**
-  - **Trainer:** Easy mode. After 10 seconds, alternate letters are revealed. After 20 seconds, the silhouette is removed.
-  - **Elite:** Standard silhouette guessing with standard clues.
-  - **Pokémon Master:** Hardcore mode. No hints, no lengths, only the dark silhouette.
+---
 
 ## 🛠️ Tech Stack
 
-This project is built using a modern, serverless architecture:
+### Frontend
+- **React 19** - Core UI framework
+- **Vite** - Lightning-fast build tool and development server
+- **React Router DOM** - Client-side routing
+- **Vanilla CSS** - Custom CSS with glassmorphism, glowing micro-animations, and responsive layouts
+- **PokéAPI** - Fetching Pokémon data (sprites, types, generation, flavor text)
 
-**Frontend**
-- **Framework:** React (bootstrapped with Vite)
-- **Routing:** React Router v6
-- **Styling:** Vanilla CSS with custom CSS variables for theming (Dynamic glassmorphism, responsive grid layouts, curated color palettes)
+### Backend & Database (Supabase)
+- **Supabase Auth** - Email & Password authentication, session management
+- **Supabase Postgres** - Relational database for storing user profiles, game sessions, multiplayer rooms, friendships, and feedbacks
+- **Row Level Security (RLS)** - Robust database security rules ensuring players can only access their own data or public room data
+- **Supabase Realtime** - WebSockets for live multiplayer gameplay, lobby syncing, and matchmaking
+- **Supabase Edge Functions** - Serverless TypeScript functions (Deno) used for triggering email notifications via Resend API
 
-**Backend & Infrastructure**
-- **BaaS:** Supabase
-- **Database:** PostgreSQL (with Row Level Security policies)
-- **Realtime:** Supabase Realtime (WebSockets used for live multiplayer lobbies, game state synchronization, and matchmaking)
-- **Authentication:** Supabase Auth (Email & Password)
+---
 
-## 🚀 Getting Started
+## ✨ Features Breakdown
 
-### Prerequisites
-- Node.js (v16+)
-- A [Supabase](https://supabase.com/) account and project.
+### 1. Core Gameplay
+- **Dynamic Clue System:** Starts as a completely dark silhouette. Over time, the image becomes blurry, and eventually reveals the full Pokémon.
+- **Three Difficulty Modes:**
+  - **Trainer:** Easy mode. After 10 seconds, alternate letters are revealed. After 20 seconds, the silhouette is removed.
+  - **Elite:** Standard silhouette guessing with standard length clues.
+  - **Pokémon Master:** Hardcore mode. No hints, no lengths, only the dark silhouette.
+- **Generation Filtering:** Play exclusively with your favorite generations (Gen 1 through Gen 9).
+- **Smart Guess Validation:** Handles misspellings, hyphenated names (like `Ho-Oh`), and ignores gender suffixes automatically (e.g., typing "Nidoran" works for both Male and Female).
 
-### Installation
+### 2. Account & Progression
+- **Trainer Profiles:** Track total score, matches played, win rate, and total correct guesses.
+- **XP & Leveling System:** Earn XP from every match. Level up from Level 1 all the way to Level 100.
+- **Unlockable Ranks:** Reach Level 10 to unlock Ranked Matchmaking!
+- **Achievements system:** Unlock badges for reaching milestones (e.g., "First Win", "Sharpshooter").
 
-1. **Clone the repository and install dependencies:**
+### 3. Multiplayer Party Matches
+- **Custom Lobbies:** Host a room with custom settings (Number of Rounds, Max Players, Generations, Difficulty).
+- **Real-time Gameplay:** Supabase Realtime syncs the game state (timer, current Pokémon, player scores, round progression) across all clients instantly.
+- **Lobby Management:** The host can kick players, transfer host privileges automatically upon leaving, and start the game.
+- **Live Leaderboard:** See who guessed correctly first and watch the scores update live at the end of each round.
+- **Robust Disconnect Handling:** If a player leaves mid-match, the game adapts seamlessly. If only 2 players remain and one leaves, the remaining player automatically wins.
+
+### 4. Ranked Matchmaking 🏆 (Unlocks at Level 10)
+- **Global Queue:** Click "Ranked Match" to enter a global matchmaking queue.
+- **1v1 Competitive Rules:** Locked to 5 rounds, 15 seconds per round, Elite difficulty, All Generations.
+- **ELO Rating System:** Gain Rating points for winning, lose points for losing.
+- **Seasonal Resets:** Compete in seasons. At the end of a season, top players earn rewards and ratings soft-reset.
+
+### 5. Daily Challenge 📅
+- **Global Seed:** Everyone in the world gets the exact same Pokémon for the Daily Challenge on a given day.
+- **One Shot:** You only get one attempt per day. Make it count!
+- **Daily Leaderboard:** Compete for the fastest guess time on the global daily leaderboard.
+
+### 6. Social & Friends System
+- **Friend List:** Search for other trainers by username and send friend requests.
+- **Online Status:** See which of your friends are currently online (using Supabase Realtime Presence).
+- **Party Invites:** Invite online friends directly to your custom Party lobbies.
+
+### 7. User Feedback & Admin System
+- **Floating Feedback Widget:** A beautiful, non-intrusive floating button available on every screen for users to submit bug reports or suggestions.
+- **Admin Dashboard:** The developer can view all feedback in the app.
+- **Email Notifications:** When the Admin replies to a user's feedback, a Supabase Edge Function triggers an automated, branded HTML email to the user (via Resend) notifying them of the response.
+
+### 8. Production Security & Stability (New)
+- **Server-Authoritative Scoring:** Prevents client-side hacking by using atomic PostgreSQL Remote Procedure Calls (RPCs) to handle XP and score incrementing. Double-submission exploits are blocked via `UNIQUE` database constraints.
+- **Anti-Cheat Measures:** Strict Row Level Security (RLS) protects the matchmaking queues and player profiles. Tab-throttling exploits are nullified via absolute timestamp-based timers (`Date.now()`).
+- **Resilient Realtime:** Split-brain host conflicts, ghost matchmaking rooms, and duplicate round advances are gracefully handled by robust WebSocket sync locks. If a player rage-quits a ranked match, the game server automatically issues an Elo forfeit penalty.
+- **Master Pokemon Normalizer:** The guess validation engine flawlessly handles Unicode variants, Alolan/Galarian regional forms, hyphens, and specialized punctuations (e.g., typing "mr mime" perfectly matches "Mr. Mime").
+- **Global Error Boundaries:** Ensures the React app never white-screens, instead providing a graceful recovery UI if an unexpected edge case occurs.
+
+---
+
+## 🎨 UI/UX & Design Philosophy
+- **Premium Aesthetics:** Deep, rich dark mode (`#0f0c29` to `#24243e` gradients) combined with vibrant Pokémon colors.
+- **Glassmorphism:** Frosted glass panels, translucent borders, and subtle glowing dropshadows (`box-shadow: 0 8px 32px rgba(...)`).
+- **Micro-animations:** Hover effects, smooth transitions on buttons, expanding inputs, and a custom confetti celebration on victory.
+- **Responsive:** Fully playable on Desktop, Tablet, and Mobile devices.
+
+---
+
+## 💻 Local Development Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/kauz-vii/Poke-Guessr.git
+   cd Poke-Guessr
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Configure Environment Variables:**
+3. **Environment Variables:**
    Create a `.env` file in the root directory and add your Supabase credentials:
    ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-3. **Database Setup:**
-   You will need to run several SQL migrations in your Supabase SQL Editor to create the necessary tables. Check the project documentation for the SQL scripts required for:
-   - `profiles` (with XP, Level, and Rating tracking)
-   - `rooms` and `player_scores` (for multiplayer)
-   - `matchmaking_queue` (for ranked mode)
-   - `daily_challenges` and `match_history`
-   - `user_achievements`, `friends`, and `friend_requests`
-
-4. **Start the Development Server:**
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
-   The application will be available at `http://localhost:5173`.
 
-## 🎨 Design Philosophy
-The UI was meticulously crafted to provide a premium, modern gaming experience. It utilizes vibrant Pokémon-inspired colors (like `#FFCC00` for accents), sleek dark modes, subtle micro-animations on hover states, and smooth transitions to keep the interface feeling alive and engaging.
+5. **Open your browser:**
+   Navigate to `http://localhost:5173`
+
+*(To deploy Edge functions for email, use the Supabase CLI: `npx supabase functions deploy send-feedback-reply --project-ref YOUR_PROJECT_REF`)*
+
+---
+*Built by Kaushik & AI Assistant.*

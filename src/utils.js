@@ -61,8 +61,14 @@ export function getRegionEmoji(region) {
 }
 
 /**
- * Known Pokémon with gendered API name variants (e.g. nidoran-m / nidoran-f).
- * Typing the base name (e.g. "nidoran") will be accepted for either form.
+ * Master Pokémon Name Normalizer
+ * Handles: 
+ * 1. Hyphenated names (Ho-Oh, Porygon-Z)
+ * 2. Special names (Mr. Mime, Mime Jr., Type: Null, Farfetch'd)
+ * 3. Regional forms (Alolan, Galarian, Hisuian, Paldean)
+ * 4. Gender forms (nidoran-m, indeedee-female)
+ * 5. Alternate forms (rotom-wash, deoxys-attack)
+ * 6. Unicode variants (é, apostrophes)
  */
 const GENDER_VARIANT_POKEMON = new Set([
   'nidoran-m',        'nidoran-f',
@@ -73,45 +79,59 @@ const GENDER_VARIANT_POKEMON = new Set([
   'jellicent-male',   'jellicent-female',
 ]);
 
-/** Returns the base name without gender suffix for known gender-variant Pokémon. */
-function stripGenderSuffix(apiName) {
-  const lower = apiName.toLowerCase();
+// Forms that should be matched if the user just types the base name.
+// E.g. typing "Raichu" matches "raichu-alola"
+const BASE_FORM_REGEX = /-(alola|galar|hisui|paldea|mega|gmax|attack|defense|speed|wash|heat|mow|fan|frost|origin|sky|therian|incarnate|resolute|pirouette|ash|10|50|100|crowned|eternamax|rapid-strike|single-strike|bloodmoon|dusk|dawn|ultra|normal|plant|sandy|trash|sunny|rainy|snowy|blade|shield)$/i;
+
+function normalizeString(str) {
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove accents (é -> e)
+    .replace(/['’\u2018\u2019]/g, "")                 // Remove all apostrophes (Farfetch'd -> Farfetchd)
+    .replace(/[.:]/g, "")                             // Remove dots and colons (Mr. Mime -> Mr Mime, Type: Null -> Type Null)
+    .replace(/[-\s]+/g, "")                           // Remove spaces and hyphens
+    .toLowerCase()
+    .trim();
+}
+
+function getBaseName(apiName) {
+  let lower = apiName.toLowerCase();
+  
+  // 1. Strip Gender Suffixes (if in whitelist)
   if (GENDER_VARIANT_POKEMON.has(lower)) {
-    return lower.replace(/-(m|f|male|female)$/i, '');
+    lower = lower.replace(/-(m|f|male|female)$/i, '');
   }
+  
+  // 2. Strip Form Suffixes (so "deoxys-attack" -> "deoxys")
+  if (BASE_FORM_REGEX.test(lower)) {
+    lower = lower.replace(BASE_FORM_REGEX, '');
+  }
+  
   return lower;
 }
 
 export function isCorrectGuess(guess, apiName) {
   if (!guess || !apiName) return false;
 
-  const normalizedGuess   = guess.trim().toLowerCase();
-  const normalizedApiName = apiName.toLowerCase();
-  const formattedName     = formatPokemonName(apiName).toLowerCase();
-  const apiNameNoHyphen   = normalizedApiName.replace(/-/g, ' ');
-  const apiNameNoSep      = normalizedApiName.replace(/[-\s]/g, '');
-  const guessNoSep        = normalizedGuess.replace(/[-\s]/g, '');
+  const rawGuess = guess.trim();
+  const rawApiName = apiName;
+  const formattedApiName = formatPokemonName(apiName);
 
-  // Direct matches
-  if (
-    normalizedGuess === normalizedApiName ||
-    normalizedGuess === formattedName     ||
-    normalizedGuess === apiNameNoHyphen   ||
-    guessNoSep      === apiNameNoSep
-  ) return true;
+  // Exact Match Check (case-insensitive)
+  if (rawGuess.toLowerCase() === rawApiName.toLowerCase()) return true;
+  if (rawGuess.toLowerCase() === formattedApiName.toLowerCase()) return true;
 
-  // Gender-stripped match: typing "nidoran" should accept "nidoran-m" / "nidoran-f"
-  const genderStripped        = stripGenderSuffix(normalizedApiName);
-  const genderStrippedNoHyphen = genderStripped.replace(/-/g, ' ');
-  const genderStrippedNoSep    = genderStripped.replace(/[-\s]/g, '');
-  const formattedStripped      = formatPokemonName(genderStripped).toLowerCase();
+  // Fully Normalized Check (strips all punctuation, spaces, and accents)
+  const normGuess = normalizeString(rawGuess);
+  const normApi = normalizeString(rawApiName);
+  const normFormatted = normalizeString(formattedApiName);
+  
+  if (normGuess === normApi || normGuess === normFormatted) return true;
 
-  if (
-    normalizedGuess === genderStripped         ||
-    normalizedGuess === genderStrippedNoHyphen ||
-    normalizedGuess === formattedStripped      ||
-    guessNoSep      === genderStrippedNoSep
-  ) return true;
+  // Base Form Normalized Check (strips -alola, -mega, -m, etc.)
+  const baseApi = getBaseName(rawApiName);
+  const normBase = normalizeString(baseApi);
+
+  if (normGuess === normBase) return true;
 
   return false;
 }
