@@ -21,6 +21,7 @@ import { useEffect } from 'react';
 import RankedQueuePage   from './pages/RankedQueuePage';
 import LoadingState      from './components/LoadingState';
 import { useToast }      from './contexts/ToastContext';
+import FeedbackWidget    from './components/FeedbackWidget';
 
 export default function App() {
   const { loading } = useAuth();
@@ -45,26 +46,31 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/"            element={<MainMenu />} />
-      <Route path="/login"       element={<LoginPage />} />
-      <Route path="/register"    element={<RegisterPage />} />
-      <Route path="/leaderboard" element={<LeaderboardPage />} />
+    <>
+      <Routes>
+        {/* Public */}
+        <Route path="/"            element={<MainMenu />} />
+        <Route path="/login"       element={<LoginPage />} />
+        <Route path="/register"    element={<RegisterPage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
 
-      {/* Protected */}
-      <Route path="/game"          element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
-      <Route path="/profile"       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/multiplayer"   element={<ProtectedRoute><MultiplayerPage /></ProtectedRoute>} />
-      <Route path="/lobby/:roomId" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
-      <Route path="/game-starting/:roomId" element={<ProtectedRoute><GameStartingPage /></ProtectedRoute>} />
-      <Route path="/multiplayer/game/:roomId" element={<ProtectedRoute><MultiplayerGamePage /></ProtectedRoute>} />
-      <Route path="/daily"         element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} />
-      <Route path="/friends"       element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-      <Route path="/ranked"        element={<ProtectedRoute><RankedQueuePage /></ProtectedRoute>} />
+        {/* Protected */}
+        <Route path="/game"          element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
+        <Route path="/profile"       element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/multiplayer"   element={<ProtectedRoute><MultiplayerPage /></ProtectedRoute>} />
+        <Route path="/lobby/:roomId" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
+        <Route path="/game-starting/:roomId" element={<ProtectedRoute><GameStartingPage /></ProtectedRoute>} />
+        <Route path="/multiplayer/game/:roomId" element={<ProtectedRoute><MultiplayerGamePage /></ProtectedRoute>} />
+        <Route path="/daily"         element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} />
+        <Route path="/friends"       element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
+        <Route path="/ranked"        element={<ProtectedRoute><RankedQueuePage /></ProtectedRoute>} />
 
-      {/* Catch-all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {/* Global feedback button — floats on every screen */}
+      <FeedbackWidget />
+    </>
   );
 }
