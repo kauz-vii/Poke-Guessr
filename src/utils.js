@@ -60,10 +60,31 @@ export function getRegionEmoji(region) {
   return map[region] || '🌍';
 }
 
-// ── Guess validation ───────────────────────────────────────────────────────
+/**
+ * Known Pokémon with gendered API name variants (e.g. nidoran-m / nidoran-f).
+ * Typing the base name (e.g. "nidoran") will be accepted for either form.
+ */
+const GENDER_VARIANT_POKEMON = new Set([
+  'nidoran-m',        'nidoran-f',
+  'meowstic-male',    'meowstic-female',
+  'indeedee-male',    'indeedee-female',
+  'basculegion-male', 'basculegion-female',
+  'oinkologne-male',  'oinkologne-female',
+  'jellicent-male',   'jellicent-female',
+]);
+
+/** Returns the base name without gender suffix for known gender-variant Pokémon. */
+function stripGenderSuffix(apiName) {
+  const lower = apiName.toLowerCase();
+  if (GENDER_VARIANT_POKEMON.has(lower)) {
+    return lower.replace(/-(m|f|male|female)$/i, '');
+  }
+  return lower;
+}
 
 export function isCorrectGuess(guess, apiName) {
   if (!guess || !apiName) return false;
+
   const normalizedGuess   = guess.trim().toLowerCase();
   const normalizedApiName = apiName.toLowerCase();
   const formattedName     = formatPokemonName(apiName).toLowerCase();
@@ -71,12 +92,28 @@ export function isCorrectGuess(guess, apiName) {
   const apiNameNoSep      = normalizedApiName.replace(/[-\s]/g, '');
   const guessNoSep        = normalizedGuess.replace(/[-\s]/g, '');
 
-  return (
+  // Direct matches
+  if (
     normalizedGuess === normalizedApiName ||
     normalizedGuess === formattedName     ||
     normalizedGuess === apiNameNoHyphen   ||
     guessNoSep      === apiNameNoSep
-  );
+  ) return true;
+
+  // Gender-stripped match: typing "nidoran" should accept "nidoran-m" / "nidoran-f"
+  const genderStripped        = stripGenderSuffix(normalizedApiName);
+  const genderStrippedNoHyphen = genderStripped.replace(/-/g, ' ');
+  const genderStrippedNoSep    = genderStripped.replace(/[-\s]/g, '');
+  const formattedStripped      = formatPokemonName(genderStripped).toLowerCase();
+
+  if (
+    normalizedGuess === genderStripped         ||
+    normalizedGuess === genderStrippedNoHyphen ||
+    normalizedGuess === formattedStripped      ||
+    guessNoSep      === genderStrippedNoSep
+  ) return true;
+
+  return false;
 }
 
 // ── Scoring ────────────────────────────────────────────────────────────────

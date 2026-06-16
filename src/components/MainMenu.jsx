@@ -61,9 +61,7 @@ export default function MainMenu() {
             <div className="menu-pokeball-glow" aria-hidden="true" />
           </div>
           <h1 className="menu-title">
-            Pokémon<br />
-            <span className="menu-title-accent">Silhouette</span>
-            <br />Guesser
+            Poke-<span className="menu-title-accent">Guessr</span>
           </h1>
           {user && profile ? (
             <p className="menu-welcome">

@@ -12,7 +12,7 @@ export default function Header({ round, score, timeRemaining, isPlaying }) {
       <div className="header-content">
         <h1 className="app-title">
           <PokeballIcon size={28} />
-          Pokémon Silhouette Guesser
+          Poke-Guessr
         </h1>
 
         <div className="header-stats" role="status" aria-live="polite">
