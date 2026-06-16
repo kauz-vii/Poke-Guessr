@@ -31,8 +31,17 @@ export function AuthProvider({ children }) {
 
   // ── Session listener (handles OAuth redirects & page refreshes) ────────
   useEffect(() => {
-    // onAuthStateChange fires for INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, etc.
-    // This is the single source of truth for session state.
+    // Proactively fetch session in case we miss INITIAL_SESSION due to StrictMode
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // onAuthStateChange fires for SIGNED_IN, SIGNED_OUT, etc.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user ?? null);
