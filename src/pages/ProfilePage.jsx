@@ -169,6 +169,45 @@ export default function ProfilePage() {
           <StatCard icon="🔥" label="Daily Streak"   value={profile.daily_streak || 0} />
         </div>
 
+        {/* Ranked Stats */}
+        <div style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '12px' }}>
+          <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '1rem', letterSpacing: '1px' }}>
+            Competitive Profile
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Current Streak</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: profile.current_win_streak >= 3 ? '#ff9800' : 'white' }}>
+                🔥 {profile.current_win_streak || 0} Wins
+              </div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Best Streak</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-pokemon-yellow)' }}>
+                🏆 {profile.highest_win_streak || 0} Wins
+              </div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>MVP Awards</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#4caf50' }}>
+                🌟 {profile.total_mvps || 0}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Placement Matches</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: (profile.placement_matches_played || 0) >= 10 ? '#2196f3' : 'white' }}>
+                🎯 {Math.min(10, profile.placement_matches_played || 0)} / 10
+              </div>
+            </div>
+          </div>
+          
+          {(profile.rating || 0) >= 1400 && (profile.placement_matches_played || 0) >= 10 && (
+            <div style={{ marginTop: '1rem', padding: '0.8rem', background: 'rgba(244, 67, 54, 0.1)', border: '1px solid #f44336', borderRadius: '8px', fontSize: '0.85rem', color: '#f44336', textAlign: 'center' }}>
+              <strong>Rank Decay Warning:</strong> Play a ranked match within <strong>{Math.max(0, 14 - Math.floor((new Date() - new Date(profile.last_ranked_match || Date.now())) / (1000 * 60 * 60 * 24)))} days</strong> to prevent rating decay!
+            </div>
+          )}
+        </div>
+
         {/* Achievements */}
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.5rem', letterSpacing: '1px' }}>

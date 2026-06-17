@@ -42,13 +42,15 @@ export default function LeaderboardPage() {
           err = res.error;
         } else {
           const orderColumn = activeTab === 'ranked' ? 'rating' :
+                              activeTab === 'streaks' ? 'highest_win_streak' :
+                              activeTab === 'mvps' ? 'total_mvps' :
                               activeTab === 'xp' ? 'xp' :
                               activeTab === 'best' ? 'highest_score' :
                               'games_won';
           
           let query = supabase
             .from('profiles')
-            .select('id, username, highest_score, games_won, xp, rating');
+            .select('id, username, highest_score, games_won, xp, rating, highest_win_streak, total_mvps');
             
           if (activeTab === 'ranked') {
             query = query.gte('xp', 8100); // Only Level 10+ allowed in Ranked
@@ -88,6 +90,8 @@ export default function LeaderboardPage() {
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '1.5rem', paddingBottom: '8px' }}>
           {[
             { id: 'ranked', label: '⚔️ Ranked' },
+            { id: 'streaks', label: '🔥 Streaks' },
+            { id: 'mvps', label: '🌟 MVPs' },
             { id: 'xp', label: '🌟 Level' },
             { id: 'best', label: '⭐ Best Game' },
             { id: 'daily', label: '📅 Daily' },
@@ -124,6 +128,8 @@ export default function LeaderboardPage() {
                       <th className="lb-th lb-th-rank">Rank</th>
                       <th className="lb-th lb-th-name">Trainer</th>
                       {activeTab === 'ranked' && <th className="lb-th">Rating</th>}
+                      {activeTab === 'streaks' && <th className="lb-th">Best Streak</th>}
+                      {activeTab === 'mvps' && <th className="lb-th">Total MVPs</th>}
                       {activeTab === 'xp' && <th className="lb-th">Level (XP)</th>}
                       {activeTab === 'best' && <th className="lb-th">Best Score</th>}
                       {activeTab === 'daily' && <th className="lb-th">Score</th>}
@@ -146,6 +152,8 @@ export default function LeaderboardPage() {
                             </span>
                           </td>
                           {activeTab === 'ranked' && <td className="lb-td">{entry.rating || 1200}</td>}
+                          {activeTab === 'streaks' && <td className="lb-td">🔥 {entry.highest_win_streak || 0}</td>}
+                          {activeTab === 'mvps' && <td className="lb-td">🌟 {entry.total_mvps || 0}</td>}
                           {activeTab === 'xp' && <td className="lb-td">Lv {getLevelInfo(entry.xp || 0).level} <span style={{fontSize: '0.8rem', color: 'var(--color-text-secondary)'}}>({entry.xp})</span></td>}
                           {activeTab === 'best' && <td className="lb-td">{entry.highest_score}</td>}
                           {activeTab === 'daily' && <td className="lb-td">{entry.score} <span style={{fontSize: '0.8rem', color: 'var(--color-text-secondary)'}}>({entry.completion_time}s)</span></td>}

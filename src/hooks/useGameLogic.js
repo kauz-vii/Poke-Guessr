@@ -17,8 +17,8 @@ import {
 } from '../utils';
 
 const TOTAL_TIME      = 30;
-const NEXT_ROUND_DELAY = 3000;
-const FADE_DURATION    = 400;
+const NEXT_ROUND_DELAY = 5000;
+const FADE_DURATION    = 300;
 
 export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
   // ── Pokémon data ─────────────────────────────────────────────────────────
@@ -122,11 +122,11 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
       type,
       pokemonName:  pokemonRef.current?.name || '',
       pointsEarned: pointsToAdd,
-      nextRoundIn:  3,
+      nextRoundIn:  5,
     });
 
-    setNextRoundCountdown(3);
-    let cdCount = 3;
+    setNextRoundCountdown(5);
+    let cdCount = 5;
     countdownRef.current = setInterval(() => {
       cdCount--;
       setNextRoundCountdown(cdCount);

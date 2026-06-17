@@ -32,6 +32,18 @@ export default function PokedexPage() {
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'seen', 'caught', 'unseen'
   const [filterGen, setFilterGen] = useState('all'); // 'all', 1, 2, ...
   const [selectedPokemon, setSelectedPokemon] = useState(null); // For Modal
+  const [selectedFlavorText, setSelectedFlavorText] = useState(null);
+
+  useEffect(() => {
+    if (selectedPokemon) {
+      setSelectedFlavorText(null);
+      import('../api').then(({ fetchPokemon }) => {
+        fetchPokemon(selectedPokemon.id).then(data => {
+          setSelectedFlavorText(data.flavorText);
+        }).catch(err => console.error(err));
+      });
+    }
+  }, [selectedPokemon]);
 
   useEffect(() => {
     async function loadPokedex() {
@@ -243,6 +255,13 @@ export default function PokedexPage() {
               alt={selectedPokemon.name}
               style={{ width: '150px', height: '150px', objectFit: 'contain' }}
             />
+            {selectedFlavorText ? (
+              <p style={{ fontStyle: 'italic', fontSize: '0.95rem', color: '#e2e8f0', margin: '1rem 0', lineHeight: '1.5' }}>
+                "{selectedFlavorText}"
+              </p>
+            ) : (
+              <div style={{ margin: '1rem 0', fontSize: '0.9rem', color: '#888' }}>Loading fun fact...</div>
+            )}
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginTop: '1.5rem', textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ color: '#aaa' }}>Status:</span>

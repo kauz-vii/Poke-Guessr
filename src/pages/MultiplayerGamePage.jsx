@@ -44,6 +44,16 @@ export default function MultiplayerGamePage() {
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState('');
   const [activePlayerIds, setActivePlayerIds] = useState([]);
+  const [matchFinalData, setMatchFinalData] = useState(null);
+
+  useEffect(() => {
+    if (gameState === 'finished' && scores.length > 0) {
+      supabase.rpc('finalize_match_results', { p_room_id: roomId })
+        .then(({ data, error }) => {
+          if (!error && data) setMatchFinalData(data);
+        });
+    }
+  }, [gameState, roomId, scores.length]);
   
   const hostTimerRef   = useRef(null);
   const revealTimerRef = useRef(null);
@@ -311,49 +321,6 @@ export default function MultiplayerGamePage() {
       const myScore = scores.find(s => s.user_id === user.id);
       const placement = scores.findIndex(s => s.user_id === user.id) + 1;
       
-      // Calculate Elo if ranked
-      let eloChangeStr = '';
-      if (isRanked && scores.length === 2) {
-        const opponentScore = scores.find(s => s.user_id !== user.id);
-        if (opponentScore) {
-          // Fetch real ratings
-          const { data: myProfile } = await supabase.from('profiles').select('rating, peak_rating').eq('id', user.id).single();
-          const { data: oppProfile } = await supabase.from('profiles').select('rating').eq('id', opponentScore.user_id).single();
-          
-          if (myProfile && oppProfile) {
-            // Actual score: 1 if win, 0 if loss, 0.5 if tie
-            let actualScore = 0.5;
-            // If the game ended before all rounds finished, it means the opponent forfeited
-            const totalRounds = session?.total_rounds || 10;
-            if (session.current_round < totalRounds) {
-              actualScore = 1;
-            } else if (myScore.score > opponentScore.score) {
-              actualScore = 1;
-            } else if (myScore.score < opponentScore.score) {
-              actualScore = 0;
-            }
-
-            const newRating = calculateElo(myProfile.rating, oppProfile.rating, actualScore);
-            const diff = newRating - myProfile.rating;
-            eloChangeStr = diff > 0 ? `+${diff}` : `${diff}`;
-            
-            // Save ranked info specifically
-            await supabase.from('profiles').update({
-              rating: newRating,
-              peak_rating: Math.max(myProfile.peak_rating, newRating),
-              ranked_games: myProfile.ranked_games + 1,
-              // AuthContext handles ranked_wins during saveGameSession if we pass games_won?
-              // Actually AuthContext handles general games_won. We'll update ranked_wins here manually:
-            }).eq('id', user.id);
-            
-            if (actualScore === 1) {
-              const { data: p } = await supabase.from('profiles').select('ranked_wins').eq('id', user.id).single();
-              await supabase.from('profiles').update({ ranked_wins: p.ranked_wins + 1 }).eq('id', user.id);
-            }
-          }
-        }
-      }
-
       await saveGameSession({
         sessionScore: myScore?.score || 0,
         sessionCorrect: myScore?.correct_guesses || 0,
@@ -364,9 +331,22 @@ export default function MultiplayerGamePage() {
         roomId: roomId
       });
       
-      if (isRanked && eloChangeStr) {
-        // Just dispatch a toast to show rating change since we go straight to menu
-        window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: { icon: '⚔️', title: `Ranked Match Complete. Rating ${eloChangeStr}` } }));
+      if (isRanked) {
+        // Fetch new profile to get updated rating, streaks, etc.
+        const { data: newProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (newProfile) {
+          const oldRating = profile?.rating || 1200;
+          const diff = newProfile.rating - oldRating;
+          const eloChangeStr = diff > 0 ? `+${diff}` : `${diff}`;
+          
+          if (newProfile.placement_matches_played < 10) {
+            window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: { icon: '🎯', title: `Placement Match Complete (${newProfile.placement_matches_played}/10)` } }));
+          } else if (oldRating === 1200 && newProfile.placement_matches_played === 10) {
+            window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: { icon: '🏆', title: `Placements Complete! Rating: ${newProfile.rating}` } }));
+          } else {
+            window.dispatchEvent(new CustomEvent('achievement_unlocked', { detail: { icon: '⚔️', title: `Ranked Match Complete. Rating ${eloChangeStr}` } }));
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to save multiplayer session:', err);
@@ -385,6 +365,8 @@ export default function MultiplayerGamePage() {
   // Final Leaderboard Screen
   if (gameState === 'finished') {
     const winner = scores[0];
+    const mvpUser = scores.find(s => s.user_id === matchFinalData?.mvp_id);
+    
     return (
       <div className="mp-root">
         <Confetti active={true} />
@@ -396,6 +378,17 @@ export default function MultiplayerGamePage() {
             <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{winner?.username} wins!</div>
             <div style={{ color: 'var(--color-text-muted)' }}>Score: {winner?.score}</div>
           </div>
+
+          {mvpUser && (
+            <div style={{ background: 'rgba(255, 203, 5, 0.1)', border: '2px solid var(--color-pokemon-yellow)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌟</div>
+              <div style={{ color: 'var(--color-pokemon-yellow)', fontWeight: 900, fontSize: '1.2rem', marginBottom: '0.2rem' }}>Match MVP</div>
+              <div style={{ fontWeight: 'bold' }}>{mvpUser.username}</div>
+              <div style={{ fontSize: '0.9rem', color: '#ccc', marginTop: '0.5rem' }}>
+                {mvpUser.correct_guesses} Guesses • {mvpUser.score} Score
+              </div>
+            </div>
+          )}
 
           <div className="mp-divider"><span className="mp-divider-line"/></div>
 

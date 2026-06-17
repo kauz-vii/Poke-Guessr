@@ -169,8 +169,10 @@ export default function RankedQueuePage() {
 
   if (!profile) return <div className="app"><div className="auth-spinner" style={{width:40, height:40, borderWidth:4}}/></div>;
 
+  const placementsPlayed = profile.placement_matches_played || 0;
+  const isPlacing = placementsPlayed < 10;
   const currentRating = profile.rating || 1200;
-  const currentRank = getRankTier(currentRating);
+  const currentRank = isPlacing ? 'Unranked' : getRankTier(currentRating);
 
   return (
     <div className="app" style={{ display: 'flex', alignItems: 'center', justifyItems: 'center' }}>
@@ -185,8 +187,14 @@ export default function RankedQueuePage() {
         </p>
 
         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '2rem' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{currentRank}</div>
-          <div style={{ color: 'var(--color-pokemon-yellow)', fontWeight: 900 }}>Rating: {currentRating}</div>
+          <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: isPlacing ? '#aaa' : 'white' }}>{currentRank}</div>
+          {isPlacing ? (
+            <div style={{ marginTop: '0.5rem', color: 'var(--color-pokemon-yellow)', fontWeight: 900 }}>
+              Placement Matches: {placementsPlayed} / 10
+            </div>
+          ) : (
+            <div style={{ color: 'var(--color-pokemon-yellow)', fontWeight: 900 }}>Rating: {currentRating}</div>
+          )}
         </div>
 
         <button 
