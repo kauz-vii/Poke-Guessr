@@ -143,6 +143,16 @@ export default function MainMenu() {
               </button>
 
               <button
+                id="menu-pokedex-btn"
+                className="menu-btn menu-btn-ghost"
+                onClick={() => navigate('/pokedex')}
+                style={{ background: 'rgba(255,255,255,0.1)' }}
+              >
+                <span className="menu-btn-icon">📖</span>
+                <span className="menu-btn-label">Pokédex</span>
+              </button>
+
+              <button
                 id="menu-profile-btn"
                 className="menu-btn menu-btn-ghost"
                 onClick={() => navigate('/profile')}

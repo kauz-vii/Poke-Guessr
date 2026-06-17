@@ -45,9 +45,16 @@ export default function LeaderboardPage() {
                               activeTab === 'xp' ? 'xp' :
                               activeTab === 'best' ? 'highest_score' :
                               'games_won';
-          const res = await supabase
+          
+          let query = supabase
             .from('profiles')
-            .select('id, username, highest_score, games_won, xp, rating')
+            .select('id, username, highest_score, games_won, xp, rating');
+            
+          if (activeTab === 'ranked') {
+            query = query.gte('xp', 8100); // Only Level 10+ allowed in Ranked
+          }
+          
+          const res = await query
             .order(orderColumn, { ascending: false })
             .limit(20);
           data = res.data;

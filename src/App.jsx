@@ -12,6 +12,7 @@ import GamePage          from './pages/GamePage';
 import ProfilePage       from './pages/ProfilePage';
 import LeaderboardPage   from './pages/LeaderboardPage';
 import MultiplayerPage   from './pages/MultiplayerPage';
+import PokedexPage       from './pages/PokedexPage';
 import LobbyPage         from './pages/LobbyPage';
 import GameStartingPage  from './pages/GameStartingPage';
 import MultiplayerGamePage from './pages/MultiplayerGamePage';
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/daily"         element={<ProtectedRoute><DailyChallengePage /></ProtectedRoute>} />
         <Route path="/friends"       element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
         <Route path="/ranked"        element={<ProtectedRoute><RankedQueuePage /></ProtectedRoute>} />
+        <Route path="/pokedex"       element={<ProtectedRoute><PokedexPage /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

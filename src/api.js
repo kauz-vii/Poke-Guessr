@@ -18,13 +18,18 @@ const BASE_URL = 'https://pokeapi.co/api/v2';
  * @throws {Error} If the fetch fails or the Pokémon is not found
  */
 export async function fetchPokemon(id) {
-  const response = await fetch(`${BASE_URL}/pokemon/${id}`);
+  // Fetch both endpoints in parallel for speed
+  const [pokemonRes, speciesRes] = await Promise.all([
+    fetch(`${BASE_URL}/pokemon/${id}`),
+    fetch(`${BASE_URL}/pokemon-species/${id}`)
+  ]);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Pokémon #${id}: HTTP ${response.status}`);
+  if (!pokemonRes.ok) {
+    throw new Error(`Failed to fetch Pokémon #${id}: HTTP ${pokemonRes.status}`);
   }
 
-  const data = await response.json();
+  const data = await pokemonRes.json();
+  const speciesData = speciesRes.ok ? await speciesRes.json() : null;
 
   // Use official artwork if available, fall back to front default sprite
   const imageUrl =
@@ -37,11 +42,24 @@ export async function fetchPokemon(id) {
 
   const types = data.types.map(typeSlot => typeSlot.type.name);
 
+  // Extract official flavor text (Pokédex entry)
+  let flavorText = '';
+  if (speciesData && speciesData.flavor_text_entries) {
+    const englishEntry = speciesData.flavor_text_entries.find(
+      (entry) => entry.language.name === 'en'
+    );
+    if (englishEntry) {
+      // Clean up weird characters \f, \n, \r
+      flavorText = englishEntry.flavor_text.replace(/[\n\f\r]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+  }
+
   return {
     id: data.id,
     name: data.name,
     imageUrl,
     spriteUrl,
     types,
+    flavorText, // New field for Pokedex feature
   };
 }

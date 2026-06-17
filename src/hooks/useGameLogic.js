@@ -6,6 +6,7 @@
  *          sessionCorrect tracking for Supabase stats
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '../supabase';
 import { fetchPokemon } from '../api';
 import {
   getRandomPokemonId,
@@ -60,6 +61,7 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
   const countdownRef       = useRef(null);
   const isRoundOverRef     = useRef(false);
   const pokemonRef         = useRef(null);
+  const pokemonQueueRef    = useRef([]);
   const timeRemainingRef   = useRef(TOTAL_TIME);
   const difficultyRef      = useRef(difficulty);
   const selectedGensRef    = useRef(selectedGens);
@@ -99,6 +101,17 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
       sessionCorrectRef.current += 1;
       setSessionCorrect(sessionCorrectRef.current);
     }
+    
+    // Asynchronously log the Pokedex encounter
+    if (pokemonRef.current) {
+      supabase.rpc('update_pokedex_encounter', {
+        p_pokemon_id: pokemonRef.current.id,
+        p_is_correct: type === 'correct'
+      }).then(({ error }) => {
+        if (error) console.error('Pokedex RPC error:', error);
+      });
+    }
+
     if (pointsToAdd > 0) setScore(prev => prev + pointsToAdd);
     if (type === 'correct') {
       setShowConfetti(true);
@@ -153,8 +166,25 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
   }, [endRound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─────────────────────────────────────────────────────────────────────────
+  const fillQueue = useCallback(async () => {
+    const needed = 3 - pokemonQueueRef.current.length;
+    if (needed <= 0) return;
+    
+    const promises = [];
+    for (let i = 0; i < needed; i++) {
+      const id = getRandomPokemonId(selectedGensRef.current);
+      promises.push(fetchPokemon(id));
+    }
+    
+    try {
+      const newPokemons = await Promise.all(promises);
+      pokemonQueueRef.current = [...pokemonQueueRef.current, ...newPokemons];
+    } catch (err) {
+      console.error('Failed to fill queue:', err);
+    }
+  }, []);
+
   const loadPokemon = useCallback(async () => {
-    setIsLoading(true);
     setError(null);
     setIsRevealed(false);
     setIsRoundOver(false);
@@ -171,30 +201,40 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
     setShowBlurryImage(false);
 
     try {
-      const id   = getRandomPokemonId(selectedGensRef.current);
-      const data = await fetchPokemon(id);
-      pokemonRef.current = data;
-      setPokemon(data);
-      setRegion(getRegion(data.id));
+      if (pokemonQueueRef.current.length === 0) {
+        setIsLoading(true);
+        await fillQueue();
+      }
+
+      const nextPkmn = pokemonQueueRef.current.shift();
+      if (!nextPkmn) throw new Error("Queue empty");
+
+      pokemonRef.current = nextPkmn;
+      setPokemon(nextPkmn);
+      setRegion(getRegion(nextPkmn.id));
       setIsLoading(false);
-      setTimeout(() => { setIsFadedIn(true); startTimer(); }, 100);
+      
+      // Replenish queue in background
+      fillQueue();
+      
+      setTimeout(() => { setIsFadedIn(true); startTimer(); }, 50);
     } catch (err) {
       console.error('Failed to fetch Pokémon:', err);
       setError(err.message || 'Failed to load Pokémon. Please try again.');
       setIsLoading(false);
     }
-  }, [startTimer]);
+  }, [startTimer, fillQueue]);
 
-  // ─────────────────────────────────────────────────────────────────────────
   const startNewRound = useCallback(() => {
     clearAllTimers();
     setIsFadingOut(true);
     setIsFadedIn(false);
-    setTimeout(() => {
-      setRoundNumber(prev => prev + 1);
-      setIsFadingOut(false);
-      loadPokemon();
-    }, FADE_DURATION);
+    
+    // We don't use FADE_DURATION delay anymore because we want 0 loading screens!
+    // Just increment round and load immediately. The UI crossfade can handle itself if needed.
+    setRoundNumber(prev => prev + 1);
+    setIsFadingOut(false);
+    loadPokemon();
   }, [loadPokemon]);
 
   // ─────────────────────────────────────────────────────────────────────────

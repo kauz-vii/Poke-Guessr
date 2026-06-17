@@ -89,27 +89,47 @@ export default function GamePage() {
                   isRevealed={isRevealed}
                   showBlurryImage={showBlurryImage}
                 />
-                <TimerBar timeRemaining={timeRemaining} />
-                <div className="section-divider" aria-hidden="true" />
-                <CluesPanel
-                  pokemon={pokemon}
-                  showType={showType}
-                  showRegion={showRegion}
-                  showNameHint={showNameHint}
-                  showAlternateLetters={showAlternateLetters}
-                  region={region}
-                  isRevealed={isRevealed}
-                  difficulty={difficulty}
-                />
-                <div className="section-divider" aria-hidden="true" />
-                <GuessInput
-                  guess={guess}
-                  onChange={setGuess}
-                  onSubmit={submitGuess}
-                  onSkip={skipPokemon}
-                  disabled={isInputDisabled}
-                />
-                <FeedbackMessage feedback={feedback} />
+                
+                {isRevealed ? (
+                  <div className="reveal-screen slide-in-bottom" style={{ textAlign: 'center', marginTop: '1rem' }}>
+                    <h2 className="reveal-name" style={{ fontSize: '2rem', color: 'var(--color-pokemon-yellow)', textShadow: '0 0 10px rgba(255,203,5,0.5)', marginBottom: '1rem' }}>
+                      It's ⚡ {pokemon.name.toUpperCase()} ⚡
+                    </h2>
+                    {pokemon.flavorText && (
+                      <p className="reveal-pokedex-entry" style={{ fontStyle: 'italic', fontSize: '1.1rem', color: '#e2e8f0', maxWidth: '80%', margin: '0 auto 1.5rem', lineHeight: '1.5' }}>
+                        "{pokemon.flavorText}"
+                      </p>
+                    )}
+                    <div className="reveal-next" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                      Next Round Starting...<br/>
+                      <span className="reveal-countdown" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', display: 'inline-block', marginTop: '0.5rem' }}>{nextRoundCountdown}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <TimerBar timeRemaining={timeRemaining} />
+                    <div className="section-divider" aria-hidden="true" />
+                    <CluesPanel
+                      pokemon={pokemon}
+                      showType={showType}
+                      showRegion={showRegion}
+                      showNameHint={showNameHint}
+                      showAlternateLetters={showAlternateLetters}
+                      region={region}
+                      isRevealed={isRevealed}
+                      difficulty={difficulty}
+                    />
+                    <div className="section-divider" aria-hidden="true" />
+                    <GuessInput
+                      guess={guess}
+                      onChange={setGuess}
+                      onSubmit={submitGuess}
+                      onSkip={skipPokemon}
+                      disabled={isInputDisabled}
+                    />
+                    <FeedbackMessage feedback={feedback} />
+                  </>
+                )}
               </>
             )}
           </article>
