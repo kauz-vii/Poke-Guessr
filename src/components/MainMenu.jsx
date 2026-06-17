@@ -69,7 +69,7 @@ export default function MainMenu() {
             </p>
           ) : (
             <p className="menu-subtitle">
-              Can you name the Pokémon from its shadow?
+               Gotta guess 'em all !
             </p>
           )}
         </div>
