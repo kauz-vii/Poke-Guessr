@@ -31,7 +31,7 @@ export default function GamePage() {
     isRevealed, isRoundOver,
     showType, showRegion, showNameHint,
     showAlternateLetters, showBlurryImage,
-    guess, feedback, isLoading, error, isFadingOut, showConfetti,
+    guess, feedback, isLoading, error, isFadingOut, showConfetti, nextRoundCountdown,
     sessionCorrect,
     setGuess, submitGuess, skipPokemon, resetSession, retryLoad,
   } = useGameLogic({ difficulty, selectedGens });
