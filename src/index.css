@@ -291,7 +291,6 @@ body::before {
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  transition: filter var(--transition-reveal), transform var(--transition-reveal);
   filter: brightness(0);
   transform: scale(1);
   user-select: none;
@@ -301,6 +300,7 @@ body::before {
 .pokemon-image.revealed {
   filter: brightness(1) drop-shadow(0 0 20px rgba(255, 211, 0, 0.5));
   transform: scale(1.05);
+  transition: filter var(--transition-reveal), transform var(--transition-reveal);
 }
 
 .pokemon-image.loading-pulse {
