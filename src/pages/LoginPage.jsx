@@ -44,7 +44,7 @@ export default function LoginPage() {
     } catch (err) {
       const msg = err.message || '';
       if (msg.toLowerCase().includes('invalid login credentials')) {
-        setError('Invalid email or password. If you don\\'t have an account, please sign up first!');
+        setError("Invalid email or password. If you don't have an account, please sign up first!");
       } else if (msg.toLowerCase().includes('rate limit')) {
         setError('Too many login attempts. Please wait a few minutes before trying again.');
       } else {
