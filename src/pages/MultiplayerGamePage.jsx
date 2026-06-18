@@ -46,6 +46,15 @@ export default function MultiplayerGamePage() {
   const [activePlayerIds, setActivePlayerIds] = useState([]);
   const [matchFinalData, setMatchFinalData] = useState(null);
 
+  // Derived
+  const timeRemaining = session?.timer ?? ROUND_TIME;
+  const gameState     = session?.game_state ?? 'waiting';
+  const currentRound  = session?.current_round ?? 1;
+  const isRevealed    = gameState === 'reveal' || gameState === 'finished';
+  
+  // Load Clues using the shared timer and shared difficulty
+  const clues = getClueVisibility(timeRemaining, session?.difficulty || 'elite');
+
   useEffect(() => {
     if (gameState === 'finished' && scores.length > 0) {
       supabase.rpc('finalize_match_results', { p_room_id: roomId })
@@ -57,15 +66,6 @@ export default function MultiplayerGamePage() {
   
   const hostTimerRef   = useRef(null);
   const revealTimerRef = useRef(null);
-
-  // Derived
-  const timeRemaining = session?.timer ?? ROUND_TIME;
-  const gameState     = session?.game_state ?? 'waiting';
-  const currentRound  = session?.current_round ?? 1;
-  const isRevealed    = gameState === 'reveal' || gameState === 'finished';
-  
-  // Load Clues using the shared timer and shared difficulty
-  const clues = getClueVisibility(timeRemaining, session?.difficulty || 'elite');
 
   // ── 1. Initial Fetch & Setup ─────────────────────────────────────────────
   useEffect(() => {

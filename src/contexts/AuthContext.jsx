@@ -97,10 +97,13 @@ export function AuthProvider({ children }) {
       options: { data: { username } },
     });
     if (error) throw error;
-    // Eagerly update state
-    if (data.user) {
+    // Eagerly update state ONLY if a session is returned.
+    // If session is null, it means Supabase requires email confirmation.
+    if (data.session && data.user) {
       setUser(data.user);
       await fetchProfile(data.user.id);
+    } else if (data.user && !data.session) {
+      throw new Error('Account created! Please check your email to confirm your account before playing.');
     }
     return data;
   }
