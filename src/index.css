@@ -2908,3 +2908,71 @@ html {
   background: #4a5dff;
   box-shadow: 0 4px 15px rgba(59, 76, 202, 0.4);
 }
+
+/* ============================================
+   MOBILE RESPONSIVENESS OVERRIDES
+   ============================================ */
+
+@media (max-width: 800px) {
+  /* Game Layout */
+  .game-layout, .mp-game-layout {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-md) !important;
+  }
+  .clues-sidebar, .diff-legend {
+    position: static !important;
+    width: 100%;
+    margin-top: var(--space-md);
+  }
+
+  /* Header */
+  .header-content {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .header-stats {
+    justify-content: center;
+    width: 100%;
+    gap: var(--space-sm);
+  }
+  .app-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  /* Modals and Cards */
+  .mp-card, .auth-card {
+    padding: var(--space-md);
+    margin: var(--space-sm);
+    width: calc(100% - 1rem);
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Forms */
+  .mp-config-form, .mp-join-form {
+    flex-wrap: wrap;
+  }
+  .mp-config-group {
+    flex: 1 1 100%;
+  }
+
+  /* Leaderboard Table */
+  .lb-table-wrap {
+    overflow-x: auto;
+    width: 100%;
+    display: block;
+  }
+  .lb-table {
+    min-width: 500px;
+  }
+
+  /* Fonts */
+  .stat-value {
+    font-size: 1rem;
+  }
+  .pokemon-image {
+    width: 150px;
+    height: 150px;
+  }
+}

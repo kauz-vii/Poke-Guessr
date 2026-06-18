@@ -435,7 +435,7 @@ export default function MultiplayerGamePage() {
 
       <Confetti active={hasGuessedCorrectly && gameState === 'reveal'} />
 
-      <main className="game-layout" style={{ gridTemplateColumns: '1fr 260px', maxWidth: '900px' }}>
+      <main className="game-layout mp-game-layout">
         {/* ── Center Game Card ── */}
         <div className="game-center">
           <article className={`game-card fade-in`}>
