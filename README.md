@@ -2,7 +2,7 @@
 
 A full-featured, competitive multiplayer web application where players race to guess Pokémon from their silhouettes. Transform from a Beginner trainer into a Pokémon Champion through Ranked Matchmaking, Daily Challenges, and Party Matches!
 
-Built with modern web technologies, real-time syncing, and a sleek, animated dark-mode UI.
+Built with modern web technologies, real-time syncing, and a sleek, animated dark-mode UI. 
 
 ## 🚀 Live Demo
 Play the game here: [Poke-Guessr](https://poke-guessr-kaushik07oct2004-1414s-projects.vercel.app/)
