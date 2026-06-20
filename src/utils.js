@@ -20,14 +20,47 @@ export function getRandomPokemonId(selectedGens) {
     : GEN_RANGES;
 
   const totalCount = validRanges.reduce((sum, r) => sum + (r.max - r.min + 1), 0);
-  let rand = Math.floor(Math.random() * totalCount);
+  
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem('poke_guesser_history')) || [];
+  } catch(e) {}
+  
+  // Cap history at 50, but ensure we always have at least 5 pokemon left in the pool to pick from
+  const maxHistory = Math.min(50, Math.max(0, totalCount - 5));
 
-  for (const range of validRanges) {
-    const size = range.max - range.min + 1;
-    if (rand < size) return range.min + rand;
-    rand -= size;
+  let randId = 1;
+  let attempts = 0;
+  
+  while (attempts < 100) {
+    let rand = Math.floor(Math.random() * totalCount);
+    for (const range of validRanges) {
+      const size = range.max - range.min + 1;
+      if (rand < size) {
+        randId = range.min + rand;
+        break;
+      }
+      rand -= size;
+    }
+    
+    // If the picked Pokemon is not in our recent history, we're good
+    if (!history.includes(randId) || maxHistory === 0) {
+      break;
+    }
+    attempts++;
   }
-  return 1;
+
+  // Add the newly picked Pokemon to history and enforce the limit
+  history.push(randId);
+  if (history.length > maxHistory) {
+    history = history.slice(history.length - maxHistory);
+  }
+  
+  try {
+    localStorage.setItem('poke_guesser_history', JSON.stringify(history));
+  } catch(e) {}
+
+  return randId;
 }
 
 // ── Region mapping ─────────────────────────────────────────────────────────
