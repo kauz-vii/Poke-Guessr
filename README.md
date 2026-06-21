@@ -15,77 +15,62 @@ Play the game here: [Poke-Guessr](https://poke-guessr-kaushik07oct2004-1414s-pro
 - **React 19** - Core UI framework
 - **Vite** - Lightning-fast build tool and development server
 - **React Router DOM** - Client-side routing
-- **Vanilla CSS** - Custom CSS with glassmorphism, glowing micro-animations, and responsive layouts
+- **Vanilla CSS** - Custom CSS with glassmorphism, glowing micro-animations, and fully responsive mobile layouts.
 - **PokéAPI** - Fetching Pokémon data (sprites, types, generation, flavor text)
 
 ### Backend & Database (Supabase)
-- **Supabase Auth** - Email & Password authentication, session management
+- **Supabase Auth** - Email & Password authentication, Google OAuth, session management
 - **Supabase Postgres** - Relational database for storing user profiles, game sessions, multiplayer rooms, friendships, and feedbacks
 - **Row Level Security (RLS)** - Robust database security rules ensuring players can only access their own data or public room data
 - **Supabase Realtime** - WebSockets for live multiplayer gameplay, lobby syncing, and matchmaking
 - **Supabase Edge Functions** - Serverless TypeScript functions (Deno) used for triggering email notifications via Resend API
+- **pg_cron** - Automated PostgreSQL jobs for handling Rank Decay in the competitive system.
 
 ---
 
 ## ✨ Features Breakdown
 
-### 1. Core Gameplay
+### 1. Core Gameplay & Mechanics
 - **Dynamic Clue System:** Starts as a completely dark silhouette. Over time, the image becomes blurry, and eventually reveals the full Pokémon.
 - **Three Difficulty Modes:**
   - **Trainer:** Easy mode. After 10 seconds, alternate letters are revealed. After 20 seconds, the silhouette is removed.
   - **Elite:** Standard silhouette guessing with standard length clues.
   - **Pokémon Master:** Hardcore mode. No hints, no lengths, only the dark silhouette.
-- **Generation Filtering:** Play exclusively with your favorite generations (Gen 1 through Gen 9).
-- **Smart Guess Validation:** Handles misspellings, hyphenated names (like `Ho-Oh`), and ignores gender suffixes automatically (e.g., typing "Nidoran" works for both Male and Female).
+- **Smart Generation & Selection:** Play exclusively with your favorite generations (Gen 1 through Gen 9). The game guarantees you won't see the same Pokémon twice within 50 rounds!
+- **Seamless Loading:** The game preloads the next Pokémon's image in the background while you read the current Pokémon's Pokédex entry, completely eliminating loading screens between rounds.
+- **Forgiving Guess Engine:** Handles misspellings, hyphenated names (like `Ho-Oh`), and ignores gender suffixes automatically.
 
-### 2. Account & Progression
+### 2. Account Progression & Personal Pokédex
 - **Trainer Profiles:** Track total score, matches played, win rate, and total correct guesses.
 - **XP & Leveling System:** Earn XP from every match. Level up from Level 1 all the way to Level 100.
-- **Unlockable Ranks:** Reach Level 10 to unlock Ranked Matchmaking!
-- **Achievements system:** Unlock badges for reaching milestones (e.g., "First Win", "Sharpshooter").
+- **Personal Pokédex:** A persistent collection of every Pokémon you've correctly guessed. Tap on a caught Pokémon to view its sprite, ID, elements, and read its official Pokédex fun fact!
 
 ### 3. Multiplayer Party Matches
 - **Custom Lobbies:** Host a room with custom settings (Number of Rounds, Max Players, Generations, Difficulty).
 - **Real-time Gameplay:** Supabase Realtime syncs the game state (timer, current Pokémon, player scores, round progression) across all clients instantly.
-- **Lobby Management:** The host can kick players, transfer host privileges automatically upon leaving, and start the game.
+- **Host Migration:** If the host disconnects, host privileges automatically transfer to the next available player without interrupting the game.
 - **Live Leaderboard:** See who guessed correctly first and watch the scores update live at the end of each round.
-- **Robust Disconnect Handling:** If a player leaves mid-match, the game adapts seamlessly. If only 2 players remain and one leaves, the remaining player automatically wins.
 
 ### 4. Ranked Matchmaking 🏆 (Unlocks at Level 10)
-- **Global Queue:** Click "Ranked Match" to enter a global matchmaking queue.
-- **1v1 Competitive Rules:** Locked to 5 rounds, 15 seconds per round, Elite difficulty, All Generations.
-- **ELO Rating System:** Gain Rating points for winning, lose points for losing.
-- **Seasonal Resets:** Compete in seasons. At the end of a season, top players earn rewards and ratings soft-reset.
+- **Competitive Queue:** Enter a global matchmaking queue for 1v1 Ranked Matches (locked to Elite difficulty, all Generations, fast rounds).
+- **Placement Matches:** New players must complete 5 placement matches before receiving their official Rank Tier (Bronze, Silver, Gold, Platinum, Diamond, Master).
+- **Advanced Rating System:** Features Elo-based point gains/losses, Win Streak tracking (Current & Highest), and Match MVP awards.
+- **Rank Decay:** Master and Diamond players lose Elo if they remain inactive for too long.
+- **Global Leaderboards:** Compare your Rating, Win Streaks, MVPs, and XP with top players around the world.
 
-### 5. Daily Challenge 📅
-- **Global Seed:** Everyone in the world gets the exact same Pokémon for the Daily Challenge on a given day.
-- **One Shot:** You only get one attempt per day. Make it count!
-- **Daily Leaderboard:** Compete for the fastest guess time on the global daily leaderboard.
-
-### 6. Social & Friends System
+### 5. Social & Friends System
 - **Friend List:** Search for other trainers by username and send friend requests.
 - **Online Status:** See which of your friends are currently online (using Supabase Realtime Presence).
 - **Party Invites:** Invite online friends directly to your custom Party lobbies.
 
-### 7. User Feedback & Admin System
+### 6. User Feedback & Admin System
 - **Floating Feedback Widget:** A beautiful, non-intrusive floating button available on every screen for users to submit bug reports or suggestions.
-- **Admin Dashboard:** The developer can view all feedback in the app.
-- **Email Notifications:** When the Admin replies to a user's feedback, a Supabase Edge Function triggers an automated, branded HTML email to the user (via Resend) notifying them of the response.
+- **Email Notifications:** When the Admin replies to a user's feedback, a Supabase Edge Function triggers an automated email to the user (via Resend).
 
-### 8. Production Security & Stability (New)
-- **Server-Authoritative Scoring:** Prevents client-side hacking by using atomic PostgreSQL Remote Procedure Calls (RPCs) to handle XP and score incrementing. Double-submission exploits are blocked via `UNIQUE` database constraints.
-- **Anti-Cheat Measures:** Strict Row Level Security (RLS) protects the matchmaking queues and player profiles. Tab-throttling exploits are nullified via absolute timestamp-based timers (`Date.now()`).
-- **Resilient Realtime:** Split-brain host conflicts, ghost matchmaking rooms, and duplicate round advances are gracefully handled by robust WebSocket sync locks. If a player rage-quits a ranked match, the game server automatically issues an Elo forfeit penalty.
-- **Master Pokemon Normalizer:** The guess validation engine flawlessly handles Unicode variants, Alolan/Galarian regional forms, hyphens, and specialized punctuations (e.g., typing "mr mime" perfectly matches "Mr. Mime").
-- **Global Error Boundaries:** Ensures the React app never white-screens, instead providing a graceful recovery UI if an unexpected edge case occurs.
-
----
-
-## 🎨 UI/UX & Design Philosophy
-- **Premium Aesthetics:** Deep, rich dark mode (`#0f0c29` to `#24243e` gradients) combined with vibrant Pokémon colors.
-- **Glassmorphism:** Frosted glass panels, translucent borders, and subtle glowing dropshadows (`box-shadow: 0 8px 32px rgba(...)`).
-- **Micro-animations:** Hover effects, smooth transitions on buttons, expanding inputs, and a custom confetti celebration on victory.
-- **Responsive:** Fully playable on Desktop, Tablet, and Mobile devices.
+### 7. Production Security & Stability
+- **Server-Authoritative Scoring:** Uses atomic PostgreSQL Remote Procedure Calls (RPCs) to handle XP and score incrementing. Double-submission exploits are blocked via `UNIQUE` constraints.
+- **Resilient Realtime Sync:** Split-brain host conflicts and duplicate round advances are gracefully handled by robust WebSocket sync locks.
+- **Rage-quit Penalties:** If a player disconnects during a ranked match, the game server automatically issues an Elo forfeit penalty.
 
 ---
 
