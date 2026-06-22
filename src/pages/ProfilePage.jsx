@@ -8,20 +8,8 @@ import { useToast } from '../contexts/ToastContext';
 import { supabase } from '../supabase';
 import { getLevelInfo, getRankTier } from '../utils';
 import { ACHIEVEMENTS } from '../achievements';
-
-/** Avatar using initials */
-function Avatar({ username }) {
-  const initials = (username || '?')
-    .split(/[\s_]/)
-    .map(w => w[0]?.toUpperCase() || '')
-    .slice(0, 2)
-    .join('');
-  return (
-    <div className="profile-avatar" aria-hidden="true">
-      {initials}
-    </div>
-  );
-}
+import PlayerCard from '../components/PlayerCard';
+import PokemonSearchBox from '../components/PokemonSearchBox';
 
 /** One stat card */
 function StatCard({ icon, label, value, highlight }) {
@@ -40,8 +28,8 @@ export default function ProfilePage() {
   const { showToast } = useToast();
   const [recentMatches, setRecentMatches] = useState([]);
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
+  const [isEditingCard, setIsEditingCard] = useState(false);
+  const [editForm, setEditForm] = useState({ username: '', favorite_pokemon: '', favorite_region: '' });
 
   useEffect(() => {
     if (profile?.id) {
@@ -73,16 +61,20 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleSaveUsername() {
-    if (!newUsername.trim()) return;
+  async function handleSaveCard() {
+    if (!editForm.username.trim()) return;
     try {
-      const { error } = await supabase.from('profiles').update({ username: newUsername }).eq('id', profile.id);
+      const { error } = await supabase.from('profiles').update({ 
+        username: editForm.username,
+        favorite_pokemon: editForm.favorite_pokemon,
+        favorite_region: editForm.favorite_region
+      }).eq('id', profile.id);
       if (error) throw error;
       await refreshProfile();
-      setIsEditingUsername(false);
-      showToast('Username updated successfully!', 'success');
+      setIsEditingCard(false);
+      showToast('Profile updated successfully!', 'success');
     } catch (e) {
-      showToast('Failed to update username.', 'error');
+      showToast('Failed to update profile.', 'error');
     }
   }
 
@@ -108,47 +100,19 @@ export default function ProfilePage() {
       </div>
 
       <div className="profile-card">
-        {/* Header */}
-        <div className="profile-header" style={{ marginBottom: '1rem' }}>
-          <Avatar username={profile.username} />
-          <div className="profile-info" style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {isEditingUsername ? (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input 
-                    type="text" 
-                    value={newUsername} 
-                    onChange={e => setNewUsername(e.target.value)}
-                    className="game-input"
-                    style={{ padding: '4px 8px', width: '150px' }}
-                    autoFocus
-                  />
-                  <button onClick={handleSaveUsername} className="btn btn-primary" style={{ padding: '4px 12px', minWidth: 'auto' }}>Save</button>
-                  <button onClick={() => setIsEditingUsername(false)} className="btn btn-ghost" style={{ padding: '4px 12px', minWidth: 'auto' }}>Cancel</button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h1 className="profile-username" style={{ margin: 0 }}>{profile.username}</h1>
-                  <button onClick={() => { setNewUsername(profile.username); setIsEditingUsername(true); }} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.9rem', minWidth: 'auto' }}>✏️</button>
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ background: 'var(--color-pokemon-yellow)', color: '#1a1a2e', padding: '4px 12px', borderRadius: '20px', fontWeight: 900, fontFamily: 'var(--font-heading)' }}>
-                  LVL {level}
-                </div>
-                <div style={{ background: '#9c27b0', color: 'white', padding: '4px 12px', borderRadius: '20px', fontWeight: 900, fontFamily: 'var(--font-heading)' }}>
-                  {getRankTier(profile.rating || 1200)} ({profile.rating || 1200})
-                </div>
-              </div>
-            </div>
-            <p className="profile-joined">
-              Trainer since{' '}
-              {new Date(profile.created_at).toLocaleDateString('en-US', {
-                year: 'numeric', month: 'long', day: 'numeric',
-              })}
-            </p>
-          </div>
-        </div>
+        <PlayerCard 
+          profile={profile} 
+          unlockedAchievements={unlockedAchievements} 
+          isMe={true} 
+          onEditClick={() => {
+            setEditForm({ 
+              username: profile.username || '', 
+              favorite_pokemon: profile.favorite_pokemon || '', 
+              favorite_region: profile.favorite_region || '' 
+            });
+            setIsEditingCard(true);
+          }} 
+        />
 
         {/* XP Bar */}
         <div style={{ marginBottom: '1.5rem' }}>
@@ -272,6 +236,52 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {isEditingCard && (
+        <div className="modal-overlay" style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content auth-card" style={{ maxWidth: 400, width: '100%', padding: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'white' }}>Edit Player Card</h2>
+            
+            <label className="form-label">Trainer Name</label>
+            <input 
+              type="text" 
+              className="game-input" 
+              value={editForm.username} 
+              onChange={e => setEditForm({...editForm, username: e.target.value})} 
+            />
+
+            <label className="form-label" style={{ marginTop: '1rem' }}>Favorite Region</label>
+            <select 
+              className="game-input" 
+              value={editForm.favorite_region} 
+              onChange={e => setEditForm({...editForm, favorite_region: e.target.value})}
+              style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}
+            >
+              <option value="">-- Select Region --</option>
+              <option value="Kanto">Kanto</option>
+              <option value="Johto">Johto</option>
+              <option value="Hoenn">Hoenn</option>
+              <option value="Sinnoh">Sinnoh</option>
+              <option value="Unova">Unova</option>
+              <option value="Kalos">Kalos</option>
+              <option value="Alola">Alola</option>
+              <option value="Galar">Galar</option>
+              <option value="Paldea">Paldea</option>
+            </select>
+
+            <label className="form-label" style={{ marginTop: '1rem' }}>Favorite Pokémon</label>
+            <PokemonSearchBox 
+              value={editForm.favorite_pokemon} 
+              onChange={val => setEditForm({...editForm, favorite_pokemon: val})} 
+            />
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button className="btn btn-primary" onClick={handleSaveCard} style={{ flex: 1 }}>Save Changes</button>
+              <button className="btn btn-ghost" onClick={() => setIsEditingCard(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

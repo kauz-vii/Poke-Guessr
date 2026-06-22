@@ -2910,6 +2910,133 @@ html {
 }
 
 /* ============================================
+   PLAYER CARD & POKEMON SEARCH
+   ============================================ */
+
+.player-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.player-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0,0,0,0.3);
+  position: relative;
+}
+.player-card-info {
+  flex: 1;
+}
+.player-card-name {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  color: white;
+}
+.player-card-badges {
+  display: flex;
+  gap: 8px;
+}
+.player-card-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.level-badge {
+  background: var(--color-pokemon-yellow);
+  color: #1a1a2e;
+}
+.rank-badge {
+  background: #9c27b0;
+  color: white;
+}
+.edit-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+}
+.player-card-body {
+  padding: 16px;
+}
+.player-card-favs {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.fav-item {
+  display: flex;
+  flex-direction: column;
+}
+.fav-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+.fav-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+}
+.player-card-achievements {
+  margin-top: 16px;
+}
+.achievements-list {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+.achievement-icon {
+  font-size: 1.8rem;
+  background: rgba(255,255,255,0.1);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+/* Pokemon Search Dropdown */
+.pokemon-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+.pokemon-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #1a1a2e;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+}
+.pokemon-dropdown li {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: white;
+  transition: background 0.2s;
+}
+.pokemon-dropdown li:hover {
+  background: var(--color-pokemon-blue);
+}
+.pokemon-dropdown-empty {
+  padding: 8px 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* ============================================
    MOBILE RESPONSIVENESS OVERRIDES
    ============================================ */
 
