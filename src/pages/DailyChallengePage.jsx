@@ -169,10 +169,6 @@ export default function DailyChallengePage() {
     }
   }, [guess, pokemon, timeRemaining, endRound]);
 
-  const skipPokemon = useCallback(() => {
-    if (isRoundOverRef.current) return;
-    endRound('skipped', 0);
-  }, [endRound]);
 
   // 4. Save Match
   useEffect(() => {
@@ -280,7 +276,6 @@ export default function DailyChallengePage() {
                   guess={guess}
                   onChange={setGuess}
                   onSubmit={submitGuess}
-                  onSkip={skipPokemon}
                   disabled={isRoundOver || isSaving}
                 />
                 <FeedbackMessage feedback={feedback} />

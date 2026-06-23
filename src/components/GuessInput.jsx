@@ -2,7 +2,7 @@
  * GuessInput.jsx - Text input and submit button for guessing the Pokémon
  */
 
-export default function GuessInput({ guess, onChange, onSubmit, onSkip, disabled }) {
+export default function GuessInput({ guess, onChange, onSubmit, disabled }) {
   /**
    * Handles Enter key press to submit guess
    */
@@ -41,19 +41,6 @@ export default function GuessInput({ guess, onChange, onSubmit, onSkip, disabled
           aria-label="Submit your guess"
         >
           Guess!
-        </button>
-      </div>
-
-      {/* Action buttons row: Skip */}
-      <div className="action-buttons">
-        <button
-          id="skip-pokemon-btn"
-          className="btn btn-ghost"
-          onClick={onSkip}
-          disabled={disabled}
-          aria-label="Skip this Pokémon"
-        >
-          🏃 Skip Pokémon
         </button>
       </div>
     </div>

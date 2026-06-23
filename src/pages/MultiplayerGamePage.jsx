@@ -473,7 +473,6 @@ export default function MultiplayerGamePage() {
                     guess={guess}
                     onChange={setGuess}
                     onSubmit={submitGuess}
-                    onSkip={() => {}} // No skipping in multiplayer
                     disabled={gameState !== 'round_active' || hasGuessedCorrectly}
                   />
                 )}

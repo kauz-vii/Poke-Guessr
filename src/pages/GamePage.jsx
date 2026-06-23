@@ -33,7 +33,7 @@ export default function GamePage() {
     showAlternateLetters, showBlurryImage,
     guess, feedback, isLoading, error, isFadingOut, showConfetti, nextRoundCountdown,
     sessionCorrect,
-    setGuess, submitGuess, skipPokemon, resetSession, retryLoad,
+    setGuess, submitGuess, resetSession, retryLoad,
   } = useGameLogic({ difficulty, selectedGens });
 
   const isInputDisabled = isRoundOver || isLoading || !!error || isSaving;
@@ -124,7 +124,6 @@ export default function GamePage() {
                       guess={guess}
                       onChange={setGuess}
                       onSubmit={submitGuess}
-                      onSkip={skipPokemon}
                       disabled={isInputDisabled}
                     />
                     <FeedbackMessage feedback={feedback} />
