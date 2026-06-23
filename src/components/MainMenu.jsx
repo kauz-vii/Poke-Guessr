@@ -23,6 +23,7 @@ export default function MainMenu() {
   
   const level = profile ? Math.floor(Math.sqrt((profile.xp || 0) / 100)) + 1 : 1;
   const isRankedLocked = level < 10;
+  const isHardcoreLocked = level < 5;
 
   async function handleLogout() {
     try {
@@ -111,6 +112,31 @@ export default function MainMenu() {
               >
                 <span className="menu-btn-icon">{isRankedLocked ? '🔒' : '⚔️'}</span>
                 <span className="menu-btn-label">Ranked Match {isRankedLocked && <span style={{fontSize: '0.7rem', display: 'block'}}>Unlocks at Lvl 10</span>}</span>
+              </button>
+
+              <button
+                id="menu-hardcore-btn"
+                className="menu-btn"
+                onClick={() => {
+                  if (isHardcoreLocked) {
+                    showToast('Hardcore Mode unlocks at Level 5!', 'warning');
+                  } else {
+                    navigate('/hardcore');
+                  }
+                }}
+                style={{
+                  background: isHardcoreLocked
+                    ? '#555'
+                    : 'linear-gradient(135deg, #b71c1c, #d32f2f)',
+                  opacity: isHardcoreLocked ? 0.7 : 1,
+                  cursor: isHardcoreLocked ? 'not-allowed' : 'pointer',
+                  boxShadow: isHardcoreLocked ? 'none' : '0 4px 20px rgba(183,28,28,0.5)',
+                }}
+              >
+                <span className="menu-btn-icon">{isHardcoreLocked ? '🔒' : '☠️'}</span>
+                <span className="menu-btn-label">
+                  Hardcore{isHardcoreLocked && <span style={{fontSize: '0.7rem', display: 'block'}}>Unlocks at Lvl 5</span>}
+                </span>
               </button>
 
               <button

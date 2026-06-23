@@ -2910,8 +2910,203 @@ html {
 }
 
 /* ============================================
-   PLAYER CARD & POKEMON SEARCH
+   HARDCORE MODE
    ============================================ */
+
+.hc-root {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0a0a 100%);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+  color: white;
+}
+
+/* Header */
+.hc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid rgba(255, 50, 50, 0.3);
+  backdrop-filter: blur(6px);
+}
+.hc-header-center {
+  flex: 1;
+  text-align: center;
+}
+.hc-mode-label {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #ff4444;
+  text-shadow: 0 0 10px rgba(255, 50, 50, 0.5);
+}
+.hc-back-btn {
+  font-size: 0.9rem;
+}
+.hc-stats {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.hc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.hc-stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.hc-stat-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  font-family: var(--font-heading);
+}
+.hc-streak-fire {
+  color: #ff6b35;
+  text-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
+}
+
+/* Warning banner */
+.hc-warning-banner {
+  background: rgba(255, 30, 30, 0.15);
+  border-bottom: 1px solid rgba(255, 50, 50, 0.3);
+  text-align: center;
+  padding: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ff6666;
+  letter-spacing: 0.5px;
+}
+
+/* Game card */
+.hc-game-card {
+  flex: 1;
+  max-width: 600px;
+  width: 100%;
+  margin: 2rem auto;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 50, 50, 0.2);
+  border-radius: 16px;
+  padding: var(--space-lg);
+  backdrop-filter: blur(10px);
+}
+
+/* Elimination Screen */
+.hc-elimination-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  z-index: 9999;
+  overflow: hidden;
+}
+.hc-elim-bg-pulse {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(180, 0, 0, 0.25) 0%, transparent 70%);
+  animation: hcPulse 2s ease-in-out infinite;
+}
+@keyframes hcPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.hc-elim-content {
+  position: relative;
+  text-align: center;
+  padding: 2rem;
+  max-width: 480px;
+  animation: hcSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes hcSlideIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+.hc-skull {
+  font-size: 5rem;
+  animation: hcSpin 0.6s ease-out;
+}
+@keyframes hcSpin {
+  from { transform: rotate(-30deg) scale(0.5); opacity: 0; }
+  to { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+.hc-elim-title {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #ff2222;
+  text-shadow: 0 0 20px rgba(255, 0, 0, 0.6), 0 0 40px rgba(255, 0, 0, 0.3);
+  margin: 0.5rem 0;
+}
+.hc-elim-sub {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Streak display on elimination */
+.hc-streak-display {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem 2.5rem;
+  margin: 1.5rem auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.hc-streak-number {
+  font-size: 4rem;
+  font-weight: 900;
+  font-family: var(--font-heading);
+  color: #ff6b35;
+  line-height: 1;
+  text-shadow: 0 0 15px rgba(255, 107, 53, 0.6);
+}
+.hc-streak-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.hc-new-record {
+  background: linear-gradient(135deg, rgba(255, 203, 5, 0.15), rgba(255, 203, 5, 0.05));
+  border: 1px solid rgba(255, 203, 5, 0.4);
+  border-radius: 8px;
+  padding: 10px 20px;
+  color: var(--color-pokemon-yellow);
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  animation: hcPulse 1.5s ease-in-out infinite;
+}
+
+.hc-prev-best {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.hc-elim-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.hc-btn {
+  min-width: 140px;
+}
+
+
 
 .modal-overlay {
   position: fixed;

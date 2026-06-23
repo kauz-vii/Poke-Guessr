@@ -43,6 +43,7 @@ export default function LeaderboardPage() {
         } else {
           const orderColumn = activeTab === 'ranked' ? 'rating' :
                               activeTab === 'streaks' ? 'highest_win_streak' :
+                              activeTab === 'hardcore' ? 'highest_hardcore_streak' :
                               activeTab === 'mvps' ? 'total_mvps' :
                               activeTab === 'xp' ? 'xp' :
                               activeTab === 'best' ? 'highest_score' :
@@ -50,7 +51,7 @@ export default function LeaderboardPage() {
           
           let query = supabase
             .from('profiles')
-            .select('id, username, highest_score, games_won, xp, rating, highest_win_streak, total_mvps');
+            .select('id, username, highest_score, games_won, xp, rating, highest_win_streak, total_mvps, highest_hardcore_streak');
             
           if (activeTab === 'ranked') {
             query = query.gte('xp', 8100); // Only Level 10+ allowed in Ranked
@@ -89,13 +90,14 @@ export default function LeaderboardPage() {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '1.5rem', paddingBottom: '8px' }}>
           {[
-            { id: 'ranked', label: '⚔️ Ranked' },
-            { id: 'streaks', label: '🔥 Streaks' },
-            { id: 'mvps', label: '🌟 MVPs' },
-            { id: 'xp', label: '🌟 Level' },
-            { id: 'best', label: '⭐ Best Game' },
-            { id: 'daily', label: '📅 Daily' },
-            { id: 'wins', label: '🏆 Most Wins' }
+            { id: 'ranked',   label: '⚔️ Ranked' },
+            { id: 'hardcore', label: '☠️ Hardcore' },
+            { id: 'streaks',  label: '🔥 Streaks' },
+            { id: 'mvps',     label: '🌟 MVPs' },
+            { id: 'xp',       label: '🌟 Level' },
+            { id: 'best',     label: '⭐ Best Game' },
+            { id: 'daily',    label: '📅 Daily' },
+            { id: 'wins',     label: '🏆 Most Wins' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -127,13 +129,14 @@ export default function LeaderboardPage() {
                     <tr>
                       <th className="lb-th lb-th-rank">Rank</th>
                       <th className="lb-th lb-th-name">Trainer</th>
-                      {activeTab === 'ranked' && <th className="lb-th">Rating</th>}
-                      {activeTab === 'streaks' && <th className="lb-th">Best Streak</th>}
-                      {activeTab === 'mvps' && <th className="lb-th">Total MVPs</th>}
-                      {activeTab === 'xp' && <th className="lb-th">Level (XP)</th>}
-                      {activeTab === 'best' && <th className="lb-th">Best Score</th>}
-                      {activeTab === 'daily' && <th className="lb-th">Score</th>}
-                      {activeTab === 'wins' && <th className="lb-th">Total Wins</th>}
+                      {activeTab === 'ranked'   && <th className="lb-th">Rating</th>}
+                      {activeTab === 'hardcore'  && <th className="lb-th">Best Streak</th>}
+                      {activeTab === 'streaks'   && <th className="lb-th">Best Win Streak</th>}
+                      {activeTab === 'mvps'      && <th className="lb-th">Total MVPs</th>}
+                      {activeTab === 'xp'        && <th className="lb-th">Level (XP)</th>}
+                      {activeTab === 'best'      && <th className="lb-th">Best Score</th>}
+                      {activeTab === 'daily'     && <th className="lb-th">Score</th>}
+                      {activeTab === 'wins'      && <th className="lb-th">Total Wins</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -151,13 +154,14 @@ export default function LeaderboardPage() {
                               {isMe && <span className="lb-you-badge">YOU</span>}
                             </span>
                           </td>
-                          {activeTab === 'ranked' && <td className="lb-td">{entry.rating || 1200}</td>}
-                          {activeTab === 'streaks' && <td className="lb-td">🔥 {entry.highest_win_streak || 0}</td>}
-                          {activeTab === 'mvps' && <td className="lb-td">🌟 {entry.total_mvps || 0}</td>}
-                          {activeTab === 'xp' && <td className="lb-td">Lv {getLevelInfo(entry.xp || 0).level} <span style={{fontSize: '0.8rem', color: 'var(--color-text-secondary)'}}>({entry.xp})</span></td>}
-                          {activeTab === 'best' && <td className="lb-td">{entry.highest_score}</td>}
-                          {activeTab === 'daily' && <td className="lb-td">{entry.score} <span style={{fontSize: '0.8rem', color: 'var(--color-text-secondary)'}}>({entry.completion_time}s)</span></td>}
-                          {activeTab === 'wins' && <td className="lb-td">{entry.games_won || 0}</td>}
+                          {activeTab === 'ranked'   && <td className="lb-td">{entry.rating || 1200}</td>}
+                          {activeTab === 'hardcore'  && <td className="lb-td">☠️ {entry.highest_hardcore_streak || 0}</td>}
+                          {activeTab === 'streaks'   && <td className="lb-td">🔥 {entry.highest_win_streak || 0}</td>}
+                          {activeTab === 'mvps'      && <td className="lb-td">🌟 {entry.total_mvps || 0}</td>}
+                          {activeTab === 'xp'        && <td className="lb-td">Lv {getLevelInfo(entry.xp || 0).level} <span style={{fontSize: '0.8rem', color: 'var(--color-text-secondary)'}}>({entry.xp})</span></td>}
+                          {activeTab === 'best'      && <td className="lb-td">{entry.highest_score}</td>}
+                          {activeTab === 'daily'     && <td className="lb-td">{entry.score} <span style={{fontSize: '0.8rem', color: 'var(--color-text-secondary)'}}>({entry.completion_time}s)</span></td>}
+                          {activeTab === 'wins'      && <td className="lb-td">{entry.games_won || 0}</td>}
                         </tr>
                       );
                     })}
