@@ -1,6 +1,7 @@
 /**
  * MainMenu.jsx — Landing screen, adapts to auth state
  */
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -20,7 +21,8 @@ export default function MainMenu() {
   const navigate = useNavigate();
   const { user, profile, logout } = useAuth();
   const { showToast } = useToast();
-  
+  const [showPlayMenu, setShowPlayMenu] = useState(false);
+
   const level = profile ? Math.floor(Math.sqrt((profile.xp || 0) / 100)) + 1 : 1;
   const isRankedLocked = level < 10;
   const isHardcoreLocked = level < 5;
@@ -80,75 +82,90 @@ export default function MainMenu() {
           {user ? (
             /* ── Logged-in menu ── */
             <>
+              {/* ── PLAY button + expandable sub-menu ── */}
               <button
                 id="menu-start-btn"
-                className="menu-btn menu-btn-start"
-                onClick={() => navigate('/game')}
+                className={`menu-btn menu-btn-start ${showPlayMenu ? 'menu-btn-active' : ''}`}
+                onClick={() => setShowPlayMenu(p => !p)}
               >
-                <span className="menu-btn-icon">▶</span>
-                <span className="menu-btn-label">Play</span>
-              </button>
-
-              <button
-                id="menu-multiplayer-btn"
-                className="menu-btn menu-btn-multi"
-                onClick={() => navigate('/multiplayer')}
-              >
-                <span className="menu-btn-icon">🎮</span>
-                <span className="menu-btn-label">Party Match</span>
-              </button>
-
-              <button
-                id="menu-ranked-btn"
-                className="menu-btn menu-btn-start"
-                onClick={() => {
-                  if (isRankedLocked) {
-                    showToast('Ranked Match unlocks at Level 10!', 'warning');
-                  } else {
-                    navigate('/ranked');
-                  }
-                }}
-                style={{ background: isRankedLocked ? '#555' : '#9c27b0', opacity: isRankedLocked ? 0.7 : 1, cursor: isRankedLocked ? 'not-allowed' : 'pointer' }}
-              >
-                <span className="menu-btn-icon">{isRankedLocked ? '🔒' : '⚔️'}</span>
-                <span className="menu-btn-label">Ranked Match {isRankedLocked && <span style={{fontSize: '0.7rem', display: 'block'}}>Unlocks at Lvl 10</span>}</span>
-              </button>
-
-              <button
-                id="menu-hardcore-btn"
-                className="menu-btn"
-                onClick={() => {
-                  if (isHardcoreLocked) {
-                    showToast('Hardcore Mode unlocks at Level 5!', 'warning');
-                  } else {
-                    navigate('/hardcore');
-                  }
-                }}
-                style={{
-                  background: isHardcoreLocked
-                    ? '#555'
-                    : 'linear-gradient(135deg, #b71c1c, #d32f2f)',
-                  opacity: isHardcoreLocked ? 0.7 : 1,
-                  cursor: isHardcoreLocked ? 'not-allowed' : 'pointer',
-                  boxShadow: isHardcoreLocked ? 'none' : '0 4px 20px rgba(183,28,28,0.5)',
-                }}
-              >
-                <span className="menu-btn-icon">{isHardcoreLocked ? '🔒' : '☠️'}</span>
+                <span className="menu-btn-icon">{showPlayMenu ? '✕' : '▶'}</span>
                 <span className="menu-btn-label">
-                  Hardcore{isHardcoreLocked && <span style={{fontSize: '0.7rem', display: 'block'}}>Unlocks at Lvl 5</span>}
+                  {showPlayMenu ? 'Close' : 'Play'}
                 </span>
               </button>
 
-              <button
-                id="menu-daily-btn"
-                className="menu-btn menu-btn-daily"
-                onClick={() => navigate('/daily')}
-                style={{ background: 'var(--color-pokemon-yellow)', color: '#1a1a2e' }}
-              >
-                <span className="menu-btn-icon">📅</span>
-                <span className="menu-btn-label">Daily Challenge</span>
-              </button>
+              {/* ── Animated Play Sub-menu ── */}
+              <div className={`menu-play-submenu ${showPlayMenu ? 'menu-play-submenu--open' : ''}`}>
+                {/* Singleplayer */}
+                <button
+                  className="play-mode-btn"
+                  onClick={() => navigate('/game')}
+                  title="Casual solo play"
+                >
+                  <span className="play-mode-icon">🎮</span>
+                  <span className="play-mode-label">Singleplayer</span>
+                </button>
 
+                {/* Multiplayer / Party Match */}
+                <button
+                  className="play-mode-btn"
+                  onClick={() => navigate('/multiplayer')}
+                  title="Custom lobby with friends"
+                >
+                  <span className="play-mode-icon">👥</span>
+                  <span className="play-mode-label">Multiplayer</span>
+                </button>
+
+                {/* Hardcore */}
+                <button
+                  className={`play-mode-btn play-mode-btn--hardcore ${isHardcoreLocked ? 'play-mode-btn--locked' : ''}`}
+                  onClick={() => {
+                    if (isHardcoreLocked) {
+                      showToast('Hardcore Mode unlocks at Level 5!', 'warning');
+                    } else {
+                      navigate('/hardcore');
+                    }
+                  }}
+                  title={isHardcoreLocked ? 'Unlocks at Level 5' : 'One wrong answer = elimination'}
+                >
+                  <span className="play-mode-icon">{isHardcoreLocked ? '🔒' : '☠️'}</span>
+                  <span className="play-mode-label">
+                    Hardcore
+                    {isHardcoreLocked && <span className="play-mode-lock-hint">Lvl 5</span>}
+                  </span>
+                </button>
+
+                {/* Ranked Match */}
+                <button
+                  className={`play-mode-btn play-mode-btn--ranked ${isRankedLocked ? 'play-mode-btn--locked' : ''}`}
+                  onClick={() => {
+                    if (isRankedLocked) {
+                      showToast('Ranked Match unlocks at Level 10!', 'warning');
+                    } else {
+                      navigate('/ranked');
+                    }
+                  }}
+                  title={isRankedLocked ? 'Unlocks at Level 10' : 'Competitive 1v1 Elo matches'}
+                >
+                  <span className="play-mode-icon">{isRankedLocked ? '🔒' : '⚔️'}</span>
+                  <span className="play-mode-label">
+                    Ranked
+                    {isRankedLocked && <span className="play-mode-lock-hint">Lvl 10</span>}
+                  </span>
+                </button>
+
+                {/* Daily Challenge */}
+                <button
+                  className="play-mode-btn play-mode-btn--daily"
+                  onClick={() => navigate('/daily')}
+                  title="One shot, global leaderboard"
+                >
+                  <span className="play-mode-icon">📅</span>
+                  <span className="play-mode-label">Daily</span>
+                </button>
+              </div>
+
+              {/* ── Utility buttons ── */}
               <button
                 id="menu-leaderboard-btn"
                 className="menu-btn menu-btn-info"

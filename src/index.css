@@ -1279,7 +1279,116 @@ html {
   text-transform: uppercase;
 }
 
-/* ── Responsive ── */
+/* ── Play Button Active State ── */
+.menu-btn-active {
+  background: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+}
+
+/* ── Play Sub-menu ── */
+.menu-play-submenu {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              margin 0.3s ease;
+  margin: 0;
+}
+.menu-play-submenu--open {
+  max-height: 400px;
+  opacity: 1;
+  margin: 4px 0 4px;
+}
+
+/* ── Mode Button Grid ── */
+.menu-play-submenu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 2px;
+}
+.menu-play-submenu--open {
+  padding: 4px 2px 8px;
+}
+
+.play-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+.play-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+.play-mode-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.play-mode-label {
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.3;
+}
+.play-mode-lock-hint {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+/* Mode-specific colors */
+.play-mode-btn--hardcore {
+  border-color: rgba(255, 50, 50, 0.3);
+}
+.play-mode-btn--hardcore:not(.play-mode-btn--locked):hover {
+  background: rgba(180, 0, 0, 0.25);
+  border-color: rgba(255, 50, 50, 0.6);
+  box-shadow: 0 4px 12px rgba(180, 0, 0, 0.3);
+}
+.play-mode-btn--ranked {
+  border-color: rgba(156, 39, 176, 0.3);
+}
+.play-mode-btn--ranked:not(.play-mode-btn--locked):hover {
+  background: rgba(100, 0, 160, 0.25);
+  border-color: rgba(156, 39, 176, 0.6);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+.play-mode-btn--daily {
+  border-color: rgba(255, 203, 5, 0.3);
+}
+.play-mode-btn--daily:hover {
+  background: rgba(180, 140, 0, 0.25);
+  border-color: rgba(255, 203, 5, 0.6);
+  box-shadow: 0 4px 12px rgba(255, 203, 5, 0.2);
+}
+.play-mode-btn--locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.play-mode-btn--locked:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+
 @media (max-width: 480px) {
   .menu-card {
     padding: var(--space-xl) var(--space-lg);
