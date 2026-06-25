@@ -33,8 +33,12 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
   const [isRoundOver,   setIsRoundOver]   = useState(false);
 
   // ── Session stats ────────────────────────────────────────────────────────
-  const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [sessionCorrect,  setSessionCorrect]  = useState(0);
+  const [fastCorrect,     setFastCorrect]     = useState(0); // correct with ≥20s
+  const [fastCorrect15,   setFastCorrect15]   = useState(0); // correct with ≥15s
   const sessionCorrectRef = useRef(0);
+  const fastCorrectRef    = useRef(0);
+  const fastCorrect15Ref  = useRef(0);
 
   // ── Clue visibility ──────────────────────────────────────────────────────
   const [showType,             setShowType]             = useState(false);
@@ -100,6 +104,14 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
     if (type === 'correct') {
       sessionCorrectRef.current += 1;
       setSessionCorrect(sessionCorrectRef.current);
+      if (timeRemainingRef.current >= 20) {
+        fastCorrectRef.current += 1;
+        setFastCorrect(fastCorrectRef.current);
+      }
+      if (timeRemainingRef.current >= 15) {
+        fastCorrect15Ref.current += 1;
+        setFastCorrect15(fastCorrect15Ref.current);
+      }
     }
     
     // Asynchronously log the Pokedex encounter
@@ -265,7 +277,11 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
     setScore(0);
     setRoundNumber(1);
     setSessionCorrect(0);
+    setFastCorrect(0);
+    setFastCorrect15(0);
     sessionCorrectRef.current = 0;
+    fastCorrectRef.current    = 0;
+    fastCorrect15Ref.current  = 0;
     isRoundOverRef.current = false;
     setIsFadingOut(true);
     setTimeout(() => { setIsFadingOut(false); loadPokemon(); }, FADE_DURATION);
@@ -277,10 +293,10 @@ export function useGameLogic({ difficulty = 'elite', selectedGens } = {}) {
     pokemon, region, score, roundNumber, timeRemaining,
     isRevealed, isRoundOver,
     showType, showRegion, showNameHint,
-    showAlternateLetters, showBlurryImage,   // ← new
+    showAlternateLetters, showBlurryImage,
     guess, feedback, isLoading, error,
     isFadingOut, isFadedIn, showConfetti, nextRoundCountdown,
-    sessionCorrect,
+    sessionCorrect, fastCorrect, fastCorrect15,
     setGuess, submitGuess, skipPokemon, resetSession, retryLoad,
   };
 }

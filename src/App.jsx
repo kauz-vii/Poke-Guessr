@@ -19,6 +19,7 @@ import MultiplayerGamePage from './pages/MultiplayerGamePage';
 import DailyChallengePage  from './pages/DailyChallengePage';
 import FriendsPage       from './pages/FriendsPage';
 import HardcoreGamePage  from './pages/HardcoreGamePage';
+import WeeklyChallengePage from './pages/WeeklyChallengePage';
 import { useEffect } from 'react';
 import RankedQueuePage   from './pages/RankedQueuePage';
 import LoadingState      from './components/LoadingState';
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/ranked"        element={<ProtectedRoute><RankedQueuePage /></ProtectedRoute>} />
         <Route path="/pokedex"       element={<ProtectedRoute><PokedexPage /></ProtectedRoute>} />
         <Route path="/hardcore"      element={<ProtectedRoute><HardcoreGamePage /></ProtectedRoute>} />
+        <Route path="/weekly"        element={<ProtectedRoute><WeeklyChallengePage /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

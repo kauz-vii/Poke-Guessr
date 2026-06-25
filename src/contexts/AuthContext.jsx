@@ -11,6 +11,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { evaluateAchievements, ACHIEVEMENTS } from '../achievements';
+import { updateWeeklyProgress } from '../weeklyChallenge';
 
 const AuthContext = createContext(null);
 
@@ -126,14 +127,19 @@ export function AuthProvider({ children }) {
     if (!user) return;
     
     const { 
-      sessionScore = 0, 
-      sessionCorrect = 0, 
-      gameMode = 'casual', 
-      placement = null, 
-      roundsWon = 0, 
-      duration = 0, 
-      roomId = null,
-      isDaily = false
+      sessionScore    = 0, 
+      sessionCorrect  = 0, 
+      gameMode        = 'casual', 
+      placement       = null, 
+      roundsWon       = 0, 
+      duration        = 0, 
+      roomId          = null,
+      isDaily         = false,
+      // Weekly challenge extras
+      difficulty      = 'elite',
+      fastCorrect     = 0,
+      fastCorrect15   = 0,
+      sessionRounds   = 0,
     } = params;
 
     const isWin = placement === 1;
@@ -161,6 +167,18 @@ export function AuthProvider({ children }) {
 
     // Evaluate Achievements based on the new atomic profile state
     const newUnlocks = await evaluateAchievements(user.id, updatedProfile, params);
+
+    // Update weekly challenge progress (fire-and-forget, non-blocking)
+    updateWeeklyProgress(user.id, {
+      sessionCorrect,
+      gameMode,
+      isWin: placement === 1,
+      difficulty,
+      sessionRounds,
+      sessionScore,
+      fastCorrect,
+      fastCorrect15,
+    });
     
     // Dispatch a custom event so anywhere in the app can show a toast for unlocks
     if (newUnlocks && newUnlocks.length > 0) {

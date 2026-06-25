@@ -163,6 +163,16 @@ export default function MainMenu() {
                   <span className="play-mode-icon">📅</span>
                   <span className="play-mode-label">Daily</span>
                 </button>
+
+                {/* Weekly Challenge */}
+                <button
+                  className="play-mode-btn play-mode-btn--weekly"
+                  onClick={() => navigate('/weekly')}
+                  title="Monthly rotating challenges"
+                >
+                  <span className="play-mode-icon">📆</span>
+                  <span className="play-mode-label">Weekly</span>
+                </button>
               </div>
 
               {/* ── Utility buttons ── */}

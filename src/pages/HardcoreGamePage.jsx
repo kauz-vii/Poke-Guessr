@@ -14,6 +14,7 @@ import {
   isCorrectGuess,
   calculateScore,
 } from '../utils';
+import { updateWeeklyProgress } from '../weeklyChallenge';
 
 import PokemonDisplay  from '../components/PokemonDisplay';
 import TimerBar        from '../components/TimerBar';
@@ -83,7 +84,6 @@ export default function HardcoreGamePage() {
   const saveRecord = useCallback(async (finalStreakVal) => {
     if (!profile?.id || finalStreakVal === 0) return;
     try {
-      // Only update if it's a new record
       const prevBest = profile.highest_hardcore_streak || 0;
       if (finalStreakVal > prevBest) {
         await supabase.from('profiles')
@@ -92,6 +92,8 @@ export default function HardcoreGamePage() {
         await refreshProfile();
         setIsNewRecord(true);
       }
+      // Always update weekly challenge progress (max-based)
+      updateWeeklyProgress(profile.id, { hardcoreStreak: finalStreakVal, gameMode: 'hardcore' });
     } catch (err) {
       console.error('Failed to save hardcore record:', err);
     }

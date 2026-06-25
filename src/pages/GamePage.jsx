@@ -36,6 +36,8 @@ export default function GamePage() {
     setGuess, submitGuess, resetSession, retryLoad,
   } = useGameLogic({ difficulty, selectedGens });
 
+  const sessionRounds = roundNumber - 1;
+
   const isInputDisabled = isRoundOver || isLoading || !!error || isSaving;
 
   async function handleBackToMenu() {
@@ -45,7 +47,11 @@ export default function GamePage() {
       await saveGameSession({
         sessionScore: score,
         sessionCorrect: sessionCorrect,
-        gameMode: 'casual'
+        gameMode: 'casual',
+        difficulty,
+        fastCorrect,
+        fastCorrect15,
+        sessionRounds,
       });
       showToast('Session saved! Great playing! 🎉', 'success');
     } catch {
