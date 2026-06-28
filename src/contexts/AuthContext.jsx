@@ -12,6 +12,8 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { supabase } from '../supabase';
 import { evaluateAchievements, ACHIEVEMENTS } from '../achievements';
 import { updateWeeklyProgress } from '../weeklyChallenge';
+import { logActivity } from '../socialApi';
+import { getRankTier as getRankTierLocal } from '../utils';
 
 const AuthContext = createContext(null);
 
@@ -179,6 +181,40 @@ export function AuthProvider({ children }) {
       fastCorrect,
       fastCorrect15,
     });
+
+    // ── Log activity feed events (fire-and-forget) ─────────────────────
+    (async () => {
+      try {
+        // Win streak milestone
+        const streak = updatedProfile?.win_streak || 0;
+        if (isWin && streak > 0 && [3, 5, 10, 15, 20, 25, 50].includes(streak)) {
+          await logActivity(user.id, 'win_streak', { streak });
+        }
+        // Match win (non-casual)
+        if (isWin && gameMode !== 'casual') {
+          await logActivity(user.id, 'match_win', { gameMode });
+        }
+        // Daily challenge completion
+        if (isDaily) {
+          await logActivity(user.id, 'daily_complete', {});
+        }
+        // Achievement unlocks
+        if (newUnlocks && newUnlocks.length > 0) {
+          for (const id of newUnlocks) {
+            const ach = ACHIEVEMENTS[id];
+            if (ach) await logActivity(user.id, 'achievement', { title: ach.title });
+          }
+        }
+        // Rank promotion detection
+        const oldRank = getRankTierLocal(profile?.rating || 1200);
+        const newRank = getRankTierLocal(updatedProfile?.rating || 1200);
+        if (newRank !== oldRank) {
+          await logActivity(user.id, 'rank_up', { rank: newRank });
+        }
+      } catch (e) {
+        // Non-critical — swallow errors
+      }
+    })();
     
     // Dispatch a custom event so anywhere in the app can show a toast for unlocks
     if (newUnlocks && newUnlocks.length > 0) {

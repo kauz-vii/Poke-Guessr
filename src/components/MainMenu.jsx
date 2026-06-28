@@ -6,6 +6,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import PokeballIcon from './PokeballIcon';
+import NotificationBell from './NotificationBell';
+import { useSocial } from '../contexts/SocialContext';
 
 const BG_SHAPES = [
   { x: 8,  y: 15, size: 60, dur: 7,  delay: 0   },
@@ -189,10 +191,11 @@ export default function MainMenu() {
                 id="menu-friends-btn"
                 className="menu-btn menu-btn-ghost"
                 onClick={() => navigate('/friends')}
-                style={{ background: 'rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.1)', position: 'relative' }}
               >
                 <span className="menu-btn-icon">👥</span>
                 <span className="menu-btn-label">Friends</span>
+                <span className="menu-notif-bell"><NotificationBell /></span>
               </button>
 
               <button

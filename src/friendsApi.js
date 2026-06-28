@@ -4,7 +4,7 @@ export async function searchUsers(query, currentUserId) {
   if (!query || query.length < 3) return [];
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, level, highest_score')
+    .select('id, username, xp, highest_score')
     .ilike('username', `%${query}%`)
     .neq('id', currentUserId)
     .limit(10);
@@ -28,7 +28,7 @@ export async function getPendingRequests(userId) {
     .from('friend_requests')
     .select(`
       id, sender_id, created_at, status,
-      profiles!friend_requests_sender_id_fkey(username, level)
+      profiles!friend_requests_sender_id_fkey(username, xp)
     `)
     .eq('receiver_id', userId)
     .eq('status', 'pending');
@@ -58,8 +58,8 @@ export async function getFriendsList(userId) {
     .from('friends')
     .select(`
       id, user_id1, user_id2,
-      prof1:profiles!friends_user_id1_fkey(id, username, level),
-      prof2:profiles!friends_user_id2_fkey(id, username, level)
+      prof1:profiles!friends_user_id1_fkey(id, username, xp),
+      prof2:profiles!friends_user_id2_fkey(id, username, xp)
     `)
     .or(`user_id1.eq.${userId},user_id2.eq.${userId}`);
   if (error) {
@@ -72,7 +72,7 @@ export async function getFriendsList(userId) {
     return {
       friendId: friendProfile.id,
       username: friendProfile.username,
-      level: friendProfile.level
+      xp: friendProfile.xp
     };
   });
 }

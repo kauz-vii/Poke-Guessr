@@ -1,199 +1,479 @@
 /**
- * FriendsPage.jsx — Social hub for trainers
+ * FriendsPage.jsx — Full social hub with 4 tabs:
+ * [Friends] [Requests] [Activity] [Recent]
  */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { 
-  searchUsers, 
-  sendFriendRequest, 
-  getPendingRequests, 
-  acceptRequest, 
-  rejectRequest, 
-  getFriendsList 
+import { useSocial } from '../contexts/SocialContext';
+import PresenceDot from '../components/PresenceDot';
+import {
+  searchUsers,
+  sendFriendRequest,
+  getPendingRequests,
+  acceptRequest,
+  rejectRequest,
 } from '../friendsApi';
+import {
+  getExtendedFriendsList,
+  getOutgoingRequests,
+  cancelFriendRequest,
+  removeFriend,
+  toggleFavorite,
+  getRecentPlayers,
+  ACTIVITY_LABELS,
+  STATUS_CONFIG,
+} from '../socialApi';
+import { getLevelInfo, getRankTier } from '../utils';
+
+const TABS = [
+  { id: 'friends',  label: '👥 Friends'  },
+  { id: 'requests', label: '🔔 Requests' },
+  { id: 'activity', label: '📡 Activity' },
+  { id: 'recent',   label: '🕐 Recent'   },
+];
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function Avatar({ username, size = 40 }) {
+  const initials = (username || '?').slice(0, 2).toUpperCase();
+  const hue = (username || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  return (
+    <div
+      className="friend-avatar"
+      style={{
+        width: size,
+        height: size,
+        background: `hsl(${hue}, 60%, 35%)`,
+        fontSize: size * 0.38,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+function RankBadge({ rating }) {
+  const tier = getRankTier(rating || 1200);
+  const colors = {
+    'Beginner': '#6b7280', 'Poké Ball': '#ef4444',
+    'Great Ball': '#3b82f6', 'Ultra Ball': '#a855f7',
+    'Master Ball': '#f59e0b', 'Champion': '#fbbf24',
+  };
+  return (
+    <span className="rank-badge" style={{ borderColor: colors[tier] || '#6b7280', color: colors[tier] || '#6b7280' }}>
+      {tier}
+    </span>
+  );
+}
 
 export default function FriendsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { presenceMap, activityFeed, reloadFriends } = useSocial();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [activeTab, setActiveTab] = useState('friends');
 
+  // Friends tab state
   const [friends, setFriends] = useState([]);
-  const [requests, setRequests] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
 
+  // Requests tab state
+  const [incoming, setIncoming]   = useState([]);
+  const [outgoing, setOutgoing]   = useState([]);
+  const [incomingCount, setIncomingCount] = useState(0);
+
+  // Search state
+  const [searchQuery, setSearchQuery]     = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching]     = useState(false);
+  const [requestedIds, setRequestedIds]   = useState(new Set());
+
+  // Recent players
+  const [recentPlayers, setRecentPlayers] = useState([]);
+
+  // ── Load data on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    if (user) {
-      loadFriendsData();
-    }
-  }, [user]);
+    if (!user) return;
+    loadAll();
+  }, [user?.id]); // eslint-disable-line
 
-  async function loadFriendsData() {
+  async function loadAll() {
+    setLoadingFriends(true);
     try {
-      const f = await getFriendsList(user.id);
+      const [f, inc, out, recent] = await Promise.all([
+        getExtendedFriendsList(user.id),
+        getPendingRequests(user.id),
+        getOutgoingRequests(user.id),
+        getRecentPlayers(user.id),
+      ]);
       setFriends(f);
-      const r = await getPendingRequests(user.id);
-      setRequests(r);
+      setIncoming(inc);
+      setIncomingCount(inc.length);
+      setOutgoing(out);
+      setRecentPlayers(recent);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoadingFriends(false);
     }
   }
 
-  // Handle Search
+  // ── Debounced search ────────────────────────────────────────────────────
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length >= 3) {
-        setIsSearching(true);
-        const results = await searchUsers(searchQuery, user.id);
-        // filter out users already in friends list
-        const filtered = results.filter(r => !friends.some(f => f.friendId === r.id));
-        setSearchResults(filtered);
-        setIsSearching(false);
-      } else {
-        setSearchResults([]);
-      }
+    const timer = setTimeout(async () => {
+      if (searchQuery.length < 3) { setSearchResults([]); return; }
+      setIsSearching(true);
+      const results = await searchUsers(searchQuery, user.id);
+      const friendSet = new Set(friends.map(f => f.friendId));
+      setSearchResults(results.filter(r => !friendSet.has(r.id)));
+      setIsSearching(false);
     }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, friends]); // eslint-disable-line
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, user?.id, friends]);
-
-  const handleSendRequest = async (receiverId) => {
+  // ── Handlers ────────────────────────────────────────────────────────────
+  async function handleSendRequest(receiverId) {
     try {
       await sendFriendRequest(user.id, receiverId);
-      showToast('Friend request sent!', 'success');
-      setSearchResults(prev => prev.filter(r => r.id !== receiverId));
+      setRequestedIds(prev => new Set([...prev, receiverId]));
+      showToast('Friend request sent! 👋', 'success');
     } catch (err) {
-      if (err.code === '23505') {
-        showToast('Request already sent.', 'error');
-      } else {
-        showToast('Failed to send request.', 'error');
-      }
+      showToast(err?.code === '23505' ? 'Request already sent.' : 'Failed to send request.', 'error');
     }
-  };
-
-  const handleAccept = async (reqId, senderId) => {
-    try {
-      await acceptRequest(reqId, user.id, senderId);
-      showToast('Friend request accepted!', 'success');
-      loadFriendsData();
-    } catch (err) {
-      showToast('Failed to accept request.', 'error');
-    }
-  };
-
-  const handleReject = async (reqId) => {
-    try {
-      await rejectRequest(reqId);
-      setRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      showToast('Failed to reject request.', 'error');
-    }
-  };
-
-  // Invite to party
-  const handleInvite = (friendId) => {
-    // Basic redirect to multiplayer to create a room. 
-    // In a fully realtime app, we'd use Presence to send a direct notification.
-    showToast('To invite a friend, create a Party and send them the Code.', 'info');
-    navigate('/multiplayer');
-  };
-
-  if (!user) {
-    return (
-      <div className="page-center">
-        <div className="auth-error">Please log in to view friends.</div>
-        <Link to="/login" className="btn btn-primary" style={{ marginTop: '1rem', textDecoration: 'none' }}>Sign In</Link>
-      </div>
-    );
   }
 
+  async function handleAccept(reqId, senderId) {
+    try {
+      await acceptRequest(reqId, user.id, senderId);
+      showToast('Friend added! 🤝', 'success');
+      setIncoming(prev => prev.filter(r => r.id !== reqId));
+      setIncomingCount(c => Math.max(0, c - 1));
+      await reloadFriends();
+      loadAll();
+    } catch {
+      showToast('Failed to accept.', 'error');
+    }
+  }
+
+  async function handleReject(reqId) {
+    await rejectRequest(reqId);
+    setIncoming(prev => prev.filter(r => r.id !== reqId));
+    setIncomingCount(c => Math.max(0, c - 1));
+  }
+
+  async function handleCancel(reqId) {
+    await cancelFriendRequest(reqId);
+    setOutgoing(prev => prev.filter(r => r.id !== reqId));
+  }
+
+  async function handleRemove(friendId) {
+    if (!window.confirm('Remove this friend?')) return;
+    await removeFriend(user.id, friendId);
+    setFriends(prev => prev.filter(f => f.friendId !== friendId));
+    await reloadFriends();
+    showToast('Friend removed.', 'info');
+  }
+
+  async function handleToggleFav(friendId) {
+    const newVal = await toggleFavorite(user.id, friendId);
+    setFriends(prev => prev.map(f =>
+      f.friendId === friendId ? { ...f, isFav: newVal } : f
+    ));
+  }
+
+  function handleInvite() {
+    showToast('Create a Party room, then invite from your friends list!', 'info');
+    navigate('/multiplayer');
+  }
+
+  // ── Sort: favorites first → online → offline → alphabetical ─────────────
+  const sortedFriends = [...friends].sort((a, b) => {
+    if (a.isFav !== b.isFav) return a.isFav ? -1 : 1;
+    const aOnline = (presenceMap[a.friendId] || 'offline') !== 'offline';
+    const bOnline = (presenceMap[b.friendId] || 'offline') !== 'offline';
+    if (aOnline !== bOnline) return aOnline ? -1 : 1;
+    return a.username.localeCompare(b.username);
+  });
+
+  const onlineCount  = friends.filter(f => (presenceMap[f.friendId] || 'offline') !== 'offline').length;
+  const playingCount = friends.filter(f => {
+    const s = presenceMap[f.friendId] || 'offline';
+    return s.startsWith('playing') || s === 'in_daily' || s === 'in_hardcore';
+  }).length;
+
+  if (!user) return (
+    <div className="page-center">
+      <p style={{ color: 'var(--color-text-muted)' }}>Sign in to see your friends.</p>
+      <Link to="/login" className="btn btn-primary" style={{ marginTop: '1rem', textDecoration: 'none' }}>Sign In</Link>
+    </div>
+  );
+
   return (
-    <div className="app">
-      <div className="profile-topbar" style={{ padding: '2rem 2rem 0 2rem', maxWidth: 800, margin: '0 auto' }}>
+    <div className="soc-root">
+      {/* ── Header ── */}
+      <div className="soc-header">
         <Link to="/" className="profile-back-btn">← Menu</Link>
+        <div className="soc-header-center">
+          <h1 className="soc-title">Social Hub</h1>
+        </div>
+        <div className="soc-stats-bar">
+          <span className="soc-stat"><span style={{ color: '#22c55e' }}>●</span> {onlineCount} online</span>
+          <span className="soc-stat"><span style={{ color: '#3b82f6' }}>●</span> {playingCount} playing</span>
+        </div>
       </div>
 
-      <main style={{ padding: '2rem', maxWidth: 800, margin: '0 auto' }}>
-        <h1 style={{ color: 'var(--color-pokemon-yellow)', marginBottom: '2rem' }}>Friends & Social</h1>
+      {/* ── Tabs ── */}
+      <div className="soc-tabs">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`soc-tab ${activeTab === t.id ? 'soc-tab--active' : ''}`}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.label}
+            {t.id === 'requests' && incomingCount > 0 && (
+              <span className="soc-tab-badge">{incomingCount}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
-        {/* Search Section */}
-        <div className="game-card" style={{ marginBottom: '2rem' }}>
-          <h3>Find Trainers</h3>
-          <input
-            type="text"
-            className="guess-input"
-            style={{ width: '100%', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)' }}
-            placeholder="Search by username (min 3 chars)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          
-          {isSearching && <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Searching...</div>}
-          
-          {searchResults.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {searchResults.map(res => (
-                <div key={res.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
-                  <div>
-                    <span style={{ fontWeight: 'bold' }}>{res.username}</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>Lv {res.level}</span>
-                  </div>
-                  <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleSendRequest(res.id)}>
-                    Add Friend
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="soc-content">
 
-        {/* Pending Requests */}
-        {requests.length > 0 && (
-          <div className="game-card" style={{ marginBottom: '2rem', border: '1px solid var(--color-pokemon-yellow)' }}>
-            <h3>Pending Requests</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '1rem' }}>
-              {requests.map(req => (
-                <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
-                  <div>
-                    <span style={{ fontWeight: 'bold' }}>{req.profiles.username}</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>Lv {req.profiles.level}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleAccept(req.id, req.sender_id)}>Accept</button>
-                    <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleReject(req.id)}>Decline</button>
-                  </div>
-                </div>
-              ))}
+        {/* ════════════ FRIENDS TAB ════════════ */}
+        {activeTab === 'friends' && (
+          <div className="soc-panel">
+            {/* Search */}
+            <div className="soc-search-wrap">
+              <input
+                className="soc-search-input"
+                placeholder="🔍 Search trainers by username..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
             </div>
+
+            {/* Search Results */}
+            {searchQuery.length >= 3 && (
+              <div className="soc-search-results">
+                {isSearching && <p className="soc-empty">Searching...</p>}
+                {!isSearching && searchResults.length === 0 && (
+                  <p className="soc-empty">No trainers found.</p>
+                )}
+                {searchResults.map(r => {
+                  const { level } = getLevelInfo(r.xp || 0);
+                  const sent = requestedIds.has(r.id);
+                  return (
+                    <div key={r.id} className="soc-search-card">
+                      <Avatar username={r.username} />
+                      <div className="soc-search-info">
+                        <span className="soc-username">{r.username}</span>
+                        <span className="soc-level">Lv {level}</span>
+                      </div>
+                      <div className="soc-search-actions">
+                        <button
+                          className="btn btn-ghost soc-btn-sm"
+                          onClick={() => navigate(`/friends/${r.id}`)}
+                        >👤 Profile</button>
+                        <button
+                          className={`btn soc-btn-sm ${sent ? 'btn-ghost' : 'btn-primary'}`}
+                          onClick={() => !sent && handleSendRequest(r.id)}
+                          disabled={sent}
+                        >{sent ? '✓ Sent' : '+ Add'}</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Friends List */}
+            {loadingFriends ? (
+              <p className="soc-empty">Loading friends...</p>
+            ) : sortedFriends.length === 0 && searchQuery.length < 3 ? (
+              <div className="soc-empty-state">
+                <p style={{ fontSize: '3rem' }}>👥</p>
+                <p>No friends yet! Search for trainers above.</p>
+              </div>
+            ) : (
+              sortedFriends.map(f => {
+                const { level } = getLevelInfo(f.xp);
+                const status = presenceMap[f.friendId] || 'offline';
+                const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.offline;
+                return (
+                  <div key={f.friendId} className={`soc-friend-card ${f.isFav ? 'soc-friend-card--fav' : ''}`}>
+                    <div className="soc-friend-left">
+                      <div className="soc-avatar-wrap">
+                        <Avatar username={f.username} />
+                        <PresenceDot status={status} size={12} />
+                      </div>
+                      <div className="soc-friend-info">
+                        <div className="soc-friend-top">
+                          {f.isFav && <span className="soc-fav-star">★</span>}
+                          <span className="soc-username">{f.username}</span>
+                          <span className="soc-level">Lv {level}</span>
+                          <RankBadge rating={f.rating} />
+                        </div>
+                        <div className="soc-friend-status" style={{ color: statusCfg.color }}>
+                          {statusCfg.label}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="soc-friend-actions">
+                      <button className="soc-icon-btn" title="Invite to Party" onClick={handleInvite}>🎮</button>
+                      <button className="soc-icon-btn" title="View Profile" onClick={() => navigate(`/friends/${f.friendId}`)}>👤</button>
+                      <button
+                        className={`soc-icon-btn ${f.isFav ? 'soc-icon-btn--active' : ''}`}
+                        title={f.isFav ? 'Unpin' : 'Pin Friend'}
+                        onClick={() => handleToggleFav(f.friendId)}
+                      >★</button>
+                      <button
+                        className="soc-icon-btn soc-icon-btn--danger"
+                        title="Remove Friend"
+                        onClick={() => handleRemove(f.friendId)}
+                      >✕</button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 
-        {/* Friends List */}
-        <div className="game-card">
-          <h3>My Friends</h3>
-          {friends.length === 0 ? (
-            <p style={{ color: 'var(--color-text-muted)', marginTop: '1rem' }}>You haven't added any friends yet. Search for trainers above!</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '1rem' }}>
-              {friends.map(f => (
-                <div key={f.friendId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
-                  <div>
-                    <span style={{ fontWeight: 'bold' }}>{f.username}</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>Lv {f.level}</span>
+        {/* ════════════ REQUESTS TAB ════════════ */}
+        {activeTab === 'requests' && (
+          <div className="soc-panel">
+            {incoming.length > 0 && (
+              <>
+                <h3 className="soc-section-title">Incoming ({incoming.length})</h3>
+                {incoming.map(req => {
+                  const { level } = getLevelInfo(req.profiles?.xp || 0);
+                  return (
+                    <div key={req.id} className="soc-req-card">
+                      <Avatar username={req.profiles?.username} />
+                      <div className="soc-req-info">
+                        <span className="soc-username">{req.profiles?.username}</span>
+                        <span className="soc-level">Lv {level}</span>
+                        <span className="soc-req-time">{timeAgo(req.created_at)}</span>
+                      </div>
+                      <div className="soc-req-actions">
+                        <button className="btn btn-primary soc-btn-sm" onClick={() => handleAccept(req.id, req.sender_id)}>✓ Accept</button>
+                        <button className="btn btn-ghost soc-btn-sm" onClick={() => handleReject(req.id)}>✕ Decline</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {outgoing.length > 0 && (
+              <>
+                <h3 className="soc-section-title" style={{ marginTop: '1.5rem' }}>Sent ({outgoing.length})</h3>
+                {outgoing.map(req => {
+                  const { level } = getLevelInfo(req.profiles?.xp || 0);
+                  return (
+                    <div key={req.id} className="soc-req-card">
+                      <Avatar username={req.profiles?.username} />
+                      <div className="soc-req-info">
+                        <span className="soc-username">{req.profiles?.username}</span>
+                        <span className="soc-level">Lv {level}</span>
+                        <span className="soc-req-time">Pending · {timeAgo(req.created_at)}</span>
+                      </div>
+                      <button className="btn btn-ghost soc-btn-sm" onClick={() => handleCancel(req.id)}>Cancel</button>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {incoming.length === 0 && outgoing.length === 0 && (
+              <div className="soc-empty-state">
+                <p style={{ fontSize: '3rem' }}>🔔</p>
+                <p>No pending requests.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════ ACTIVITY TAB ════════════ */}
+        {activeTab === 'activity' && (
+          <div className="soc-panel">
+            {activityFeed.length === 0 ? (
+              <div className="soc-empty-state">
+                <p style={{ fontSize: '3rem' }}>📡</p>
+                <p>No friend activity yet. Play some games!</p>
+              </div>
+            ) : (
+              activityFeed.map(item => {
+                const template = ACTIVITY_LABELS[item.type];
+                const username = item.profiles?.username || 'Someone';
+                const text = template
+                  ? template({ username, ...item.payload })
+                  : `${username} did something`;
+                return (
+                  <div key={item.id} className="soc-activity-item">
+                    <Avatar username={username} size={36} />
+                    <div className="soc-activity-body">
+                      <p className="soc-activity-text">{text}</p>
+                      <span className="soc-activity-time">{timeAgo(item.created_at)}</span>
+                    </div>
                   </div>
-                  <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#4CAF50' }} onClick={() => handleInvite(f.friendId)}>
-                    🎮 Invite
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* ════════════ RECENT TAB ════════════ */}
+        {activeTab === 'recent' && (
+          <div className="soc-panel">
+            {recentPlayers.length === 0 ? (
+              <div className="soc-empty-state">
+                <p style={{ fontSize: '3rem' }}>🕐</p>
+                <p>No recent players yet. Play a multiplayer game!</p>
+              </div>
+            ) : (
+              recentPlayers.map(p => {
+                const { level } = getLevelInfo(p.xp);
+                const isFriend = friends.some(f => f.friendId === p.friendId);
+                return (
+                  <div key={p.id} className="soc-recent-card">
+                    <Avatar username={p.username} />
+                    <div className="soc-req-info">
+                      <span className="soc-username">{p.username}</span>
+                      <span className="soc-level">Lv {level}</span>
+                      <span className="soc-req-time">{timeAgo(p.playedAt)} · {p.gameMode}</span>
+                    </div>
+                    <div className="soc-req-actions">
+                      <button className="btn btn-ghost soc-btn-sm" onClick={() => navigate(`/friends/${p.friendId}`)}>👤 Profile</button>
+                      {!isFriend && (
+                        <button
+                          className="btn btn-primary soc-btn-sm"
+                          onClick={() => handleSendRequest(p.friendId)}
+                          disabled={requestedIds.has(p.friendId)}
+                        >
+                          {requestedIds.has(p.friendId) ? '✓ Sent' : '+ Add'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
