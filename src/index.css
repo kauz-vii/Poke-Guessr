@@ -4251,3 +4251,366 @@ html {
   .invite-modal-actions { flex-direction: row; justify-content: center; }
   .notif-dropdown { width: calc(100vw - 2rem); right: -80px; }
 }
+
+/* ============================================================
+   DAILY LOGIN REWARDS — CSS
+   ============================================================ */
+
+/* ── Overlay ─────────────────────────────────────────────── */
+.dr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 1rem;
+}
+
+/* ── Modal ───────────────────────────────────────────────── */
+.dr-modal {
+  background: linear-gradient(160deg, #1a1f2e 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 560px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  animation: dr-modal-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.dr-modal--day7 {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 24px 64px rgba(251, 191, 36, 0.2), 0 0 0 1px rgba(251, 191, 36, 0.15);
+}
+@keyframes dr-modal-enter {
+  from { transform: scale(0.85) translateY(20px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.dr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.dr-title {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: white;
+  margin: 0;
+}
+.dr-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  line-height: 1.5;
+}
+.dr-close-btn:hover { background: rgba(255, 255, 255, 0.15); color: white; }
+
+/* ── Missed day banner ───────────────────────────────────── */
+.dr-missed-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #fca5a5;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* ── 7-Day Calendar strip ────────────────────────────────── */
+.dr-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 1.5rem;
+}
+.dr-day-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s;
+  min-width: 0;
+}
+.dr-day-claimed {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.dr-day-today {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(167, 139, 250, 0.2));
+  border-color: #a78bfa;
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.3);
+  animation: dr-day-pulse 2s ease-in-out infinite;
+}
+.dr-day-locked {
+  opacity: 0.45;
+}
+@keyframes dr-day-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(167, 139, 250, 0.3); }
+  50%       { box-shadow: 0 0 18px rgba(167, 139, 250, 0.6); }
+}
+.dr-day-indicator { font-size: 1rem; line-height: 1; }
+.dr-day-num { font-size: 0.6rem; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.3px; }
+.dr-day-xp  { font-size: 0.85rem; line-height: 1; }
+.dr-day-label { font-size: 0.55rem; color: var(--color-text-muted); text-align: center; line-height: 1.2; }
+
+/* ── Reward card ─────────────────────────────────────────── */
+.dr-reward-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(167, 139, 250, 0.1));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+.dr-reward-card--day7 {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(253, 224, 71, 0.08));
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.15);
+}
+.dr-reward-card--claimed {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(74, 222, 128, 0.08));
+  border-color: rgba(34, 197, 94, 0.4);
+}
+.dr-reward-day-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.dr-reward-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  animation: dr-icon-bounce 0.6s ease forwards;
+}
+@keyframes dr-icon-bounce {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.dr-reward-amount {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 900;
+  color: white;
+  margin-bottom: 0.25rem;
+}
+.dr-rare-badge-label {
+  font-size: 0.9rem;
+  color: #fbbf24;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  animation: dr-badge-glow 1.5s ease-in-out infinite alternate;
+}
+@keyframes dr-badge-glow {
+  from { text-shadow: 0 0 4px rgba(251, 191, 36, 0.4); }
+  to   { text-shadow: 0 0 16px rgba(251, 191, 36, 0.9); }
+}
+.dr-reward-claimed-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #4ade80;
+}
+.dr-claimed-check {
+  font-size: 2rem;
+  animation: dr-check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes dr-check-pop {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+/* ── Floating XP particles ───────────────────────────────── */
+.dr-xp-floats {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.dr-xp-float-particle {
+  position: absolute;
+  bottom: 20%;
+  left: calc(15% + var(--i) * 14%);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #fbbf24;
+  white-space: nowrap;
+  animation: dr-xp-float 1.4s ease-out calc(var(--i) * 0.12s) forwards;
+  opacity: 0;
+}
+@keyframes dr-xp-float {
+  0%   { transform: translateY(0)    scale(0.8); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(-80px) scale(1.1); opacity: 0; }
+}
+
+/* ── Confetti canvas ─────────────────────────────────────── */
+.dr-confetti-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Streak row ──────────────────────────────────────────── */
+.dr-streak-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.dr-streak-chip {
+  background: rgba(251, 146, 60, 0.15);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fb923c;
+}
+.dr-badge-chip {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fbbf24;
+  animation: dr-badge-glow 1.5s ease-in-out infinite alternate;
+}
+
+/* ── Footer / CTA ────────────────────────────────────────── */
+.dr-footer { text-align: center; }
+.dr-btn {
+  min-width: 180px;
+  padding: 12px 28px !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+}
+.dr-btn--loading { opacity: 0.7; cursor: not-allowed; }
+
+/* ── Available dot (pulsing indicator on menu button) ─────── */
+.dr-available-dot {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid #0a0f1e;
+  animation: dr-dot-pulse 1.8s ease-in-out infinite;
+}
+@keyframes dr-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); transform: scale(1); }
+  50%       { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); transform: scale(1.1); }
+}
+
+/* ── Profile page — Login Streak section ─────────────────── */
+.dr-profile-section {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(239, 68, 68, 0.04));
+  border: 1px solid rgba(251, 146, 60, 0.2);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.dr-profile-section-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #fb923c;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+.dr-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.dr-profile-stat {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.dr-profile-stat--badge {
+  border-color: rgba(251, 191, 36, 0.25);
+  background: rgba(251, 191, 36, 0.05);
+}
+.dr-profile-stat-icon { font-size: 1.4rem; line-height: 1; }
+.dr-profile-stat-value {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: white;
+}
+.dr-profile-stat-label {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dr-profile-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.dr-rare-badge-icon {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6));
+  animation: dr-badge-glow 2s ease-in-out infinite alternate;
+  cursor: default;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .dr-modal { padding: 1.25rem; border-radius: 18px; }
+  .dr-calendar { gap: 4px; }
+  .dr-day-cell { padding: 6px 2px; border-radius: 8px; }
+  .dr-day-indicator { font-size: 0.85rem; }
+  .dr-day-num { font-size: 0.5rem; }
+  .dr-day-label { display: none; }
+  .dr-reward-icon { font-size: 2.5rem; }
+  .dr-reward-amount { font-size: 1.5rem; }
+  .dr-profile-stats { grid-template-columns: repeat(2, 1fr); }
+  .dr-btn { min-width: 140px; }
+}

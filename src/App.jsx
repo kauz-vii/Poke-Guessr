@@ -27,10 +27,13 @@ import RankedQueuePage   from './pages/RankedQueuePage';
 import LoadingState      from './components/LoadingState';
 import { useToast }      from './contexts/ToastContext';
 import FeedbackWidget    from './components/FeedbackWidget';
+import DailyRewardModal  from './components/DailyRewardModal';
+import { useDailyReward } from './contexts/DailyRewardContext';
 
 export default function App() {
   const { loading } = useAuth();
   const { showToast } = useToast();
+  const { modalOpen, rewardInfo, handleClaim, closeModal } = useDailyReward();
 
   useEffect(() => {
     const handleAchieve = (e) => {
@@ -82,6 +85,14 @@ export default function App() {
       <FeedbackWidget />
       {/* Party invite modal — floats globally */}
       <FriendInviteModal />
+      {/* Daily reward modal — floats globally */}
+      {modalOpen && (
+        <DailyRewardModal
+          rewardInfo={rewardInfo}
+          onClaim={handleClaim}
+          onClose={closeModal}
+        />
+      )}
     </>
   );
 }

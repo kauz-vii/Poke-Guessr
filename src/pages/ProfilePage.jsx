@@ -172,6 +172,45 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* ── Daily Login Rewards section ── */}
+        <div className="dr-profile-section">
+          <h3 className="dr-profile-section-title">🔥 Login Streak</h3>
+          <div className="dr-profile-stats">
+            <div className="dr-profile-stat">
+              <span className="dr-profile-stat-icon">🔥</span>
+              <span className="dr-profile-stat-value">{profile.current_login_streak || 0}</span>
+              <span className="dr-profile-stat-label">Current Streak</span>
+            </div>
+            <div className="dr-profile-stat">
+              <span className="dr-profile-stat-icon">🏆</span>
+              <span className="dr-profile-stat-value">{profile.highest_login_streak || 0}</span>
+              <span className="dr-profile-stat-label">Best Streak</span>
+            </div>
+            <div className="dr-profile-stat">
+              <span className="dr-profile-stat-icon">📅</span>
+              <span className="dr-profile-stat-value">
+                {profile.last_login_date
+                  ? new Date(profile.last_login_date + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                  : '—'}
+              </span>
+              <span className="dr-profile-stat-label">Last Claimed</span>
+            </div>
+            <div className="dr-profile-stat dr-profile-stat--badge">
+              <span className="dr-profile-stat-icon">🎖️</span>
+              <span className="dr-profile-stat-value">{profile.rare_badge_count || 0}</span>
+              <span className="dr-profile-stat-label">Rare Badges</span>
+            </div>
+          </div>
+          {/* Rare badge display */}
+          {(profile.rare_badge_count || 0) > 0 && (
+            <div className="dr-profile-badges">
+              {Array.from({ length: profile.rare_badge_count }).map((_, i) => (
+                <span key={i} className="dr-rare-badge-icon" title="Rare Badge — 7-Day Streak">🎖️</span>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Achievements */}
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '0.5rem', letterSpacing: '1px' }}>

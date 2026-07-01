@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 import PokeballIcon from './PokeballIcon';
 import NotificationBell from './NotificationBell';
 import { useSocial } from '../contexts/SocialContext';
+import { useDailyReward } from '../contexts/DailyRewardContext';
 
 const BG_SHAPES = [
   { x: 8,  y: 15, size: 60, dur: 7,  delay: 0   },
@@ -23,6 +24,7 @@ export default function MainMenu() {
   const navigate = useNavigate();
   const { user, profile, logout } = useAuth();
   const { showToast } = useToast();
+  const { rewardAvailable, openModal } = useDailyReward();
   const [showPlayMenu, setShowPlayMenu] = useState(false);
 
   const level = profile ? Math.floor(Math.sqrt((profile.xp || 0) / 100)) + 1 : 1;
@@ -196,6 +198,18 @@ export default function MainMenu() {
                 <span className="menu-btn-icon">👥</span>
                 <span className="menu-btn-label">Friends</span>
                 <span className="menu-notif-bell"><NotificationBell /></span>
+              </button>
+
+              {/* Daily Reward */}
+              <button
+                id="menu-daily-reward-btn"
+                className="menu-btn menu-btn-ghost"
+                onClick={openModal}
+                style={{ background: 'rgba(255,255,255,0.1)', position: 'relative' }}
+              >
+                <span className="menu-btn-icon">🎁</span>
+                <span className="menu-btn-label">Daily Reward</span>
+                {rewardAvailable && <span className="dr-available-dot" />}
               </button>
 
               <button
